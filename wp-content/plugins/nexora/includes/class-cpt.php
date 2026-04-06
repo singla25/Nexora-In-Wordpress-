@@ -1,0 +1,536 @@
+<?php
+
+class NEXORA_CPT {
+
+    public function __construct() {
+
+        add_action('admin_enqueue_scripts', [$this, 'enqueue_admin_scripts']);
+
+        add_action('admin_menu', [$this, 'register_main_menu']);
+        add_action('admin_init', [$this, 'register_settings']);
+
+        add_action('init', [$this, 'register_cpt']);
+        add_action('add_meta_boxes', [$this, 'add_meta_boxes']);
+        add_action('save_post', [$this, 'save_meta_boxes']);
+
+        // manage_{post_type}_posts_columns
+        // manage_{post_type}_posts_custom_column
+
+        add_filter('manage_user_profile_posts_columns', [$this, 'add_name_column']);
+        add_action('manage_user_profile_posts_custom_column', [$this, 'manage_name_column'], 10, 2);
+
+        add_filter('manage_user_connections_posts_columns', [$this, 'add_status_column']);
+        add_action('manage_user_connections_posts_custom_column', [$this, 'manage_status_column'], 10, 2);
+    }
+
+    public function enqueue_admin_scripts() {
+        wp_enqueue_media();
+        wp_enqueue_script(
+            'profile-admin-js',
+            NEXORA_URL . 'assets/js/profile-admin.js',
+            ['jquery'],
+            null,
+            true
+        );
+    }
+
+    public function register_main_menu() {
+
+        add_menu_page(
+            'Profile System',
+            'Profile System',
+            'manage_options',
+            'profile-system',
+            [$this, 'settings_page'],
+            'dashicons-groups',
+            5
+        );
+
+        add_submenu_page(
+            'profile-system',
+            'Settings',
+            'Settings',
+            'manage_options',
+            'profile-system',
+            [$this, 'settings_page']
+        );
+    }
+
+    public function register_cpt() {
+
+        register_post_type('user_profile', [
+            'label' => 'User Profiles',
+            'public' => true,
+            'show_ui' => true,
+            'supports' => ['title', 'thumbnail'],
+            'show_in_menu' => 'profile-system',
+            'menu_icon' => 'dashicons-groups',
+        ]);
+
+        register_post_type('user_connections', [
+            'label' => 'User Connections',
+            'public' => false,
+            'show_ui' => true,
+            'supports' => ['title'],
+            'show_in_menu' => 'profile-system',
+            'menu_icon' => 'dashicons-groups',
+        ]);
+    }
+
+    public function add_meta_boxes() {
+
+        add_meta_box('user_personal_details', 'User Personal Details', [$this, 'user_personal_details'], 'user_profile');
+        add_meta_box('user_address_details', 'User Address Details', [$this, 'user_address_details'], 'user_profile');
+        add_meta_box('user_work_details', 'User Work Details', [$this, 'user_work_details'], 'user_profile');
+        add_meta_box('user_document_details', 'User Document Details', [$this, 'user_document_details'], 'user_profile');
+        add_meta_box('user_connection_details', 'User Connection Details', [$this, 'user_connection_details'], 'user_profile');
+
+        add_meta_box('user_connection_meta_box', 'User Connection Details', [$this, 'user_connection_meta_box'], 'user_connections');
+    }
+
+    public function register_settings() {
+        register_setting('profile_settings_group', 'default_profile_image');
+        register_setting('profile_settings_group', 'default_cover_image');
+    }
+
+    public function settings_page() {
+        ?>
+        <div class="wrap">
+            <h1>Profile System Settings</h1>
+            <form method="post" action="options.php">
+                <?php settings_fields('profile_settings_group'); ?>
+                <?php do_settings_sections('profile_settings_group'); ?>
+
+                <table class="form-table">
+                    <tr>
+                        <th>Default Profile Image</th>
+                        <td>
+                            <?php $profile_id = get_option('default_profile_image'); ?>
+                            <img src="<?php echo $profile_id ? wp_get_attachment_url($profile_id) : ''; ?>" 
+                                style="max-width:100px; display:block; margin-bottom:10px;">
+
+                            <input type="hidden" name="default_profile_image" value="<?php echo esc_attr($profile_id); ?>">
+                            <button type="button" class="button upload-btn">Upload</button>
+                            <button type="button" class="button remove-btn">Remove</button>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th>Default Cover Image</th>
+                        <td>
+                            <?php $cover_id = get_option('default_cover_image'); ?>
+                            <img src="<?php echo $cover_id ? wp_get_attachment_url($cover_id) : ''; ?>" 
+                                style="max-width:150px; display:block; margin-bottom:10px;">
+
+                            <input type="hidden" name="default_cover_image" value="<?php echo esc_attr($cover_id); ?>">
+                            <button type="button" class="button upload-btn">Upload</button>
+                            <button type="button" class="button remove-btn">Remove</button>
+                        </td>
+                    </tr>
+                </table>
+
+                <?php submit_button(); ?>
+            </form>
+        </div>
+        <?php
+    }
+
+    /* ===============================
+       PERSONAL
+    =============================== */
+    public function user_personal_details($post) {
+        ?>
+
+        <input type="text" name="user_name" placeholder="User Name" value="<?php echo esc_attr(get_post_meta($post->ID, 'user_name', true)); ?>" class="widefat"><br><br>
+        <input type="text" name="first_name" placeholder="First Name" value="<?php echo esc_attr(get_post_meta($post->ID, 'first_name', true)); ?>" class="widefat"><br><br>
+        <input type="text" name="last_name" placeholder="Last Name" value="<?php echo esc_attr(get_post_meta($post->ID, 'last_name', true)); ?>" class="widefat"><br><br>
+        <input type="email" name="email" placeholder="Email" value="<?php echo esc_attr(get_post_meta($post->ID, 'email', true)); ?>" class="widefat"><br><br>
+        <input type="text" name="phone" placeholder="Phone" value="<?php echo esc_attr(get_post_meta($post->ID, 'phone', true)); ?>" class="widefat"><br><br>
+        <input type="text" name="linkedin_id" placeholder="LinkedIn" value="<?php echo esc_attr(get_post_meta($post->ID, 'linkedin_id', true)); ?>" class="widefat"><br><br>
+
+        <label>Gender</label>
+        <select name="gender" class="widefat">
+            <option value="">Select Gender</option>
+            <option value="male" <?php selected(get_post_meta($post->ID, 'gender', true), 'male'); ?>>Male</option>
+            <option value="female" <?php selected(get_post_meta($post->ID, 'gender', true), 'female'); ?>>Female</option>
+            <option value="other" <?php selected(get_post_meta($post->ID, 'gender', true), 'other'); ?>>Other</option>
+        </select><br><br>
+
+        <label>Birthdate</label>
+        <input type="date" name="birthdate"
+            value="<?php echo esc_attr(get_post_meta($post->ID, 'birthdate', true)); ?>"
+            class="widefat"><br><br>
+
+        <textarea name="bio" placeholder="Bio" class="widefat"><?php echo esc_textarea(get_post_meta($post->ID, 'bio', true)); ?></textarea>
+
+        <?php
+    }
+
+    /* ===============================
+       ADDRESS
+    =============================== */
+    public function user_address_details($post) {
+        ?>
+
+        <h3>Permanent Address</h3>
+
+        <input type="text" name="perm_address" placeholder="Address" value="<?php echo esc_attr(get_post_meta($post->ID, 'perm_address', true)); ?>" class="widefat"><br><br>
+        <input type="text" name="perm_city" placeholder="City" value="<?php echo esc_attr(get_post_meta($post->ID, 'perm_city', true)); ?>" class="widefat"><br><br>
+        <input type="text" name="perm_state" placeholder="State" value="<?php echo esc_attr(get_post_meta($post->ID, 'perm_state', true)); ?>" class="widefat"><br><br>
+        <input type="text" name="perm_pincode" placeholder="Pincode" value="<?php echo esc_attr(get_post_meta($post->ID, 'perm_pincode', true)); ?>" class="widefat"><br><br>
+
+        <h3>Correspondence Address</h3>
+
+        <input type="text" name="corr_address" placeholder="Address" value="<?php echo esc_attr(get_post_meta($post->ID, 'corr_address', true)); ?>" class="widefat"><br><br>
+        <input type="text" name="corr_city" placeholder="City" value="<?php echo esc_attr(get_post_meta($post->ID, 'corr_city', true)); ?>" class="widefat"><br><br>
+        <input type="text" name="corr_state" placeholder="State" value="<?php echo esc_attr(get_post_meta($post->ID, 'corr_state', true)); ?>" class="widefat"><br><br>
+        <input type="text" name="corr_pincode" placeholder="Pincode" value="<?php echo esc_attr(get_post_meta($post->ID, 'corr_pincode', true)); ?>" class="widefat"><br><br>
+
+        <?php
+    }
+
+    /* ===============================
+       WORK
+    =============================== */
+    public function user_work_details($post) {
+        ?>
+
+        <input type="text" name="company_name" placeholder="Company Name" value="<?php echo esc_attr(get_post_meta($post->ID, 'company_name', true)); ?>" class="widefat"><br><br>
+        <input type="text" name="designation" placeholder="Designation" value="<?php echo esc_attr(get_post_meta($post->ID, 'designation', true)); ?>" class="widefat"><br><br>
+        <input type="email" name="company_email" placeholder="Company Email" value="<?php echo esc_attr(get_post_meta($post->ID, 'company_email', true)); ?>" class="widefat"><br><br>
+        <input type="text" name="company_phone" placeholder="Company Phone" value="<?php echo esc_attr(get_post_meta($post->ID, 'company_phone', true)); ?>" class="widefat"><br><br>
+        <input type="text" name="company_address" placeholder="Company Address" value="<?php echo esc_attr(get_post_meta($post->ID, 'company_address', true)); ?>" class="widefat"><br><br>
+
+        <?php
+    }
+
+    /* ===============================
+       DOCUMENTS (MEDIA UPLOAD)
+    =============================== */
+    public function user_document_details($post) {
+
+        $fields = [
+            'profile_image'   => 'Profile Image',
+            'cover_image'     => 'Cover Image',
+            'aadhaar_card'    => 'Aadhar Card',
+            'driving_license' => 'Driving License',
+            'company_id_card' => 'Company ID Card'
+        ];
+
+        foreach ($fields as $key => $label) {
+
+            $image_id = get_post_meta($post->ID, $key, true);
+            $image_url = $image_id ? wp_get_attachment_url($image_id) : '';
+            ?>
+
+            <div class="profile-upload-box">
+                <label><strong><?php echo $label; ?></strong></label><br>
+
+                <img src="<?php echo esc_url($image_url); ?>"
+                    class="profile-preview"
+                    style="max-width:150px; display:<?php echo $image_url ? 'block' : 'none'; ?>; margin-bottom:10px;">
+
+                <input type="hidden" name="<?php echo $key; ?>" value="<?php echo esc_attr($image_id); ?>">
+
+                <button type="button" class="button upload-btn">Upload</button>
+                <button type="button" class="button remove-btn" style="<?php echo $image_url ? '' : 'display:none;'; ?>">Remove</button>
+            </div>
+            <hr>
+            <?php
+        }
+    }
+
+    /* ===============================
+       USER CONNECTIONS
+    =============================== */
+    public function user_connection_details($post) {
+
+        $profile_id = $post->ID;
+
+        // ===============================
+        // RECEIVED REQUESTS
+        // ===============================
+        $received = get_posts([
+            'post_type' => 'user_connections',
+            'posts_per_page' => -1,
+            'meta_query' => [
+                [
+                    'key' => 'receiver_profile_id',
+                    'value' => $profile_id
+                ]
+            ]
+        ]);
+
+        // ===============================
+        // SENT REQUESTS
+        // ===============================
+        $sent = get_posts([
+            'post_type' => 'user_connections',
+            'posts_per_page' => -1,
+            'meta_query' => [
+                [
+                    'key' => 'sender_profile_id',
+                    'value' => $profile_id
+                ]
+            ]
+        ]);
+
+        ?>
+
+        <h2>📥 Received Requests</h2>
+
+        <table class="widefat striped">
+            <thead>
+                <tr>
+                    <th>Sender Profile ID</th>
+                    <th>Sender Username</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+
+            <?php if ($received): foreach ($received as $conn): 
+
+                $sender_id   = get_post_meta($conn->ID, 'sender_profile_id', true);
+                $sender_name = get_post_meta($conn->ID, 'sender_user_name', true);
+                $status      = get_post_meta($conn->ID, 'status', true);
+
+            ?>
+
+                <tr>
+                    <td><?php echo esc_html($sender_id); ?></td>
+                    <td><?php echo esc_html($sender_name); ?></td>
+                    <td><?php echo esc_html($status); ?></td>
+                </tr>
+
+            <?php endforeach; else: ?>
+
+                <tr><td colspan="3">No received requests</td></tr>
+
+            <?php endif; ?>
+
+            </tbody>
+        </table>
+
+
+        <br><br>
+
+        <h2>📤 Sent Requests</h2>
+
+        <table class="widefat striped">
+            <thead>
+                <tr>
+                    <th>Receiver Profile ID</th>
+                    <th>Receiver Username</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+
+            <?php if ($sent): foreach ($sent as $conn): 
+
+                $receiver_id   = get_post_meta($conn->ID, 'receiver_profile_id', true);
+                $receiver_name = get_post_meta($conn->ID, 'receiver_user_name', true);
+                $status        = get_post_meta($conn->ID, 'status', true);
+
+            ?>
+
+                <tr>
+                    <td><?php echo esc_html($receiver_id); ?></td>
+                    <td><?php echo esc_html($receiver_name); ?></td>
+                    <td><?php echo esc_html($status); ?></td>
+                </tr>
+
+            <?php endforeach; else: ?>
+
+                <tr><td colspan="3">No sent requests</td></tr>
+
+            <?php endif; ?>
+
+            </tbody>
+        </table>
+
+        <?php
+    }
+
+    /* ===============================
+       USER CONNECTIONS META BOX
+    =============================== */
+    public function user_connection_meta_box($post) {
+
+        $sender_user_id     = get_post_meta($post->ID, 'sender_user_id', true);
+        $sender_profile_id  = get_post_meta($post->ID, 'sender_profile_id', true);
+        $sender_user_name   = get_post_meta($post->ID, 'sender_user_name', true);
+
+        $receiver_user_id    = get_post_meta($post->ID, 'receiver_user_id', true);
+        $receiver_profile_id = get_post_meta($post->ID, 'receiver_profile_id', true);
+        $receiver_user_name  = get_post_meta($post->ID, 'receiver_user_name', true);
+
+        $status = get_post_meta($post->ID, 'status', true);
+        ?>
+
+        <table class="form-table">
+
+            <tr>
+                <th>Sender User ID</th>
+                <td><input type="number" name="sender_user_id" value="<?php echo esc_attr($sender_user_id); ?>" class="widefat"></td>
+            </tr>
+
+            <tr>
+                <th>Sender Profile ID</th>
+                <td><input type="number" name="sender_profile_id" value="<?php echo esc_attr($sender_profile_id); ?>" class="widefat"></td>
+            </tr>
+
+            <tr>
+                <th>Sender User Name</th>
+                <td><input type="text" name="sender_user_name" value="<?php echo esc_attr($sender_user_name); ?>" class="widefat"></td>
+            </tr>
+
+            <tr>
+                <th>Receiver User ID</th>
+                <td><input type="number" name="receiver_user_id" value="<?php echo esc_attr($receiver_user_id); ?>" class="widefat"></td>
+            </tr>
+
+            <tr>
+                <th>Receiver Profile ID</th>
+                <td><input type="number" name="receiver_profile_id" value="<?php echo esc_attr($receiver_profile_id); ?>" class="widefat"></td>
+            </tr>
+
+            <tr>
+                <th>Receiver User Name</th>
+                <td><input type="text" name="receiver_user_name" value="<?php echo esc_attr($receiver_user_name); ?>" class="widefat"></td>
+            </tr>
+
+            <tr>
+                <th>Status</th>
+                <td>
+                    <select name="status" class="widefat">
+                        <option value="pending" <?php selected($status, 'pending'); ?>>Pending</option>
+                        <option value="accepted" <?php selected($status, 'accepted'); ?>>Accepted</option>
+                        <option value="rejected" <?php selected($status, 'rejected'); ?>>Rejected</option>
+                        <option value="removed" <?php selected($status, 'removed'); ?>>Removed</option>
+                    </select>
+                </td>
+            </tr>
+
+        </table>
+
+        <?php
+    }
+
+    /* ===============================
+       SAVE DATA
+    =============================== */
+    public function save_meta_boxes($post_id) {
+
+        if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) return;
+
+        $fields = [
+            // PROFILE FIELDS...
+            'user_name','first_name','last_name','email','phone','linkedin_id','bio','gender','birthdate',
+
+            // ADDRESS
+            'perm_address','perm_city','perm_state','perm_pincode',
+            'corr_address','corr_city','corr_state','corr_pincode',
+
+            // WORK
+            'company_name','designation','company_email','company_phone','company_address',
+
+            // IMAGES
+            'profile_image','cover_image','aadhaar_card','driving_license','company_id_card',
+
+            // CONNECTION FIELDS
+            'sender_user_id','sender_profile_id','sender_user_name','receiver_user_id','receiver_profile_id','receiver_user_name','status'
+        ];
+
+        foreach ($fields as $field) {
+
+            if (isset($_POST[$field])) {
+
+                // Image fields
+                if (in_array($field, ['profile_image','cover_image','aadhaar_card','driving_license','company_id_card'])) {
+                    update_post_meta($post_id, $field, intval($_POST[$field]));
+                }
+
+                // Status
+                elseif ($field === 'status') {
+                    update_post_meta($post_id, $field, sanitize_text_field($_POST[$field]));
+                } 
+
+                // Normal text
+                else {
+                    update_post_meta($post_id, $field, sanitize_text_field($_POST[$field]));
+                }
+            }
+        }
+    }
+
+    function add_name_column($columns) {
+
+        $new_columns = [];
+
+        foreach ($columns as $key => $value) {
+
+            $new_columns[$key] = $value;
+
+            // Add after Title column
+            if ($key === 'title') {
+                $new_columns['user_full_name'] = 'Name';
+            }
+        }
+
+        return $new_columns;
+    }
+
+    function manage_name_column($column, $post_id) {
+
+        if ($column === 'user_full_name') {
+
+            $first_name = get_post_meta($post_id, 'first_name', true);
+            $last_name  = get_post_meta($post_id, 'last_name', true);
+            $full_name  = $first_name . ' ' . $last_name;
+
+            echo $full_name;
+        }
+
+    }
+
+    function add_status_column($columns) {
+
+        $new_columns = [];
+
+        foreach ($columns as $key => $value) {
+
+            $new_columns[$key] = $value;
+
+            // Add after Title column
+            if ($key === 'title') {
+                $new_columns['connection_status'] = 'Status';
+            }
+        }
+
+        return $new_columns;
+    }
+
+    function manage_status_column($column, $post_id) {
+
+        if ($column === 'connection_status') {
+
+            $status = get_post_meta($post_id, 'status', true);
+
+            if (!$status) {
+                $status = 'pending';
+            }
+
+            if ($status === 'accepted') {
+                echo '<span style="color: green; font-weight: 600;">Accepted</span>';
+            } elseif ($status === 'rejected') {
+                echo '<span style="color: red; font-weight: 600;">Rejected</span>';
+            } elseif ($status === 'removed') {
+                echo '<span style="color: #374151; font-weight: 600;">Removed</span>';
+            } else {
+                echo '<span style="color: orange; font-weight: 600;">Pending</span>';
+            }
+        }
+    }
+}
