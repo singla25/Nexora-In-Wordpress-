@@ -16,6 +16,7 @@ require_once NEXORA_PATH . 'includes/class-registration.php';
 require_once NEXORA_PATH . 'includes/class-profile-page.php';
 require_once NEXORA_PATH . 'includes/class-login.php';
 require_once NEXORA_PATH . 'includes/class-home-page.php';
+require_once NEXORA_PATH . 'includes/class-notification.php';
 
 class NEXORA_System {
 
@@ -28,6 +29,8 @@ class NEXORA_System {
 
         add_action('wp_enqueue_scripts', [$this, 'enqueue_assets']);
         add_action('after_setup_theme', [$this, 'hide_admin_bar']);
+
+        register_activation_hook(__FILE__, [$this, 'notification_table']);
     }
 
     public function enqueue_assets() {
@@ -52,6 +55,11 @@ class NEXORA_System {
         if (!current_user_can('administrator')) {
             show_admin_bar(false);
         }
+    }
+
+    function notification_table() {
+        $notification = new NEXORA_Notification();
+        $notification->create_table();
     }
 }
 

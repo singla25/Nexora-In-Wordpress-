@@ -451,4 +451,61 @@ jQuery(document).ready(function ($) {
         );
 
     });
+
+    // ===============================
+    // VIEW NOTIFICATION
+    // ===============================
+    $(document).on('click', '.notification-view[data-type="view-receive-noti"]', function () {
+        $.post(profilePageData.ajaxUrl, {
+            action: 'update_notification_is_read',
+            nonce: profilePageData.nonce
+        }, function (res) {
+
+            
+        });
+    });
+
+    // ===============================
+    // VIEW NOTIFICATION (COMMON)
+    // ===============================
+    $(document).on('click', '.notification-view', function (e) {
+
+        e.stopPropagation(); // prevent parent click
+
+        let btn = $(this);
+        let item = btn.closest('.notification-item');
+        let id = btn.data('id');
+        let type = btn.data('type');
+
+        let message = item.find('.noti-content').text();
+
+        // SHOW POPUP (COMMON FOR BOTH)
+        Swal.fire({
+            title: 'Notification',
+            text: message,
+            icon: 'info'
+        });
+
+        // ===============================
+        // ONLY FOR RECEIVER → AJAX
+        // ===============================
+        if (type === 'view-receive-noti') {
+
+            $.post(profilePageData.ajaxUrl, {
+                action: 'mark_notification_read',
+                id: id,
+                nonce: profilePageData.nonce
+            }, function (res) {
+
+                if (res.success) {
+
+                    // UI update
+                    item.removeClass('unread').addClass('read');
+
+                    // badge remove (simple)
+                    $('.noti-badge').fadeOut();
+                }
+            });
+        }
+    });
 });

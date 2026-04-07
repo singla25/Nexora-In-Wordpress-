@@ -39,6 +39,9 @@ class NEXORA_Page {
 
         add_action('wp_ajax_change_password', [$this, 'change_password']);
         add_action('wp_ajax_nopriv_change_password', [$this, 'change_password']);
+
+        add_action('wp_ajax_mark_notification_read', [$this, 'mark_notification_read']);
+        add_action('wp_ajax_nopriv_mark_notification_read', [$this, 'mark_notification_read']);
     }
 
     /* ===============================
@@ -180,6 +183,23 @@ class NEXORA_Page {
 
         update_post_meta($post_id, 'status', 'pending');
 
+        // 🔔 Notification insert
+        $notification = new NEXORA_Notification();
+
+        $notification->insert([
+            'sender_user_id'      => $sender_user_id,
+            'sender_profile_id'   => $sender_profile_id,
+            'sender_user_name'    => $sender_user_name,
+
+            'receiver_user_id'    => $receiver_user_id,
+            'receiver_profile_id' => $receiver_profile_id,
+            'receiver_user_name'  => $receiver_user_name,
+
+            'type' => 'request',
+            'reference_id' => $post_id,
+            'message' => "{$sender_user_name} sent a connection request to {$receiver_user_name}"
+        ]);
+
         wp_send_json_success('Request sent');
     }
 
@@ -237,6 +257,43 @@ class NEXORA_Page {
         $status = sanitize_text_field($_POST['status']);
 
         update_post_meta($connection_id, 'status', $status);
+
+        // 🔔 Fetch connection data
+        $sender_user_id      = get_post_meta($connection_id, 'sender_user_id', true);
+        $sender_profile_id   = get_post_meta($connection_id, 'sender_profile_id', true);
+        $sender_user_name    = get_post_meta($connection_id, 'sender_user_name', true);
+
+        $receiver_user_id    = get_post_meta($connection_id, 'receiver_user_id', true);
+        $receiver_profile_id = get_post_meta($connection_id, 'receiver_profile_id', true);
+        $receiver_user_name  = get_post_meta($connection_id, 'receiver_user_name', true);
+
+        $notification = new NEXORA_Notification();
+
+        // 🎯 MESSAGE BASED ON STATUS
+        if ($status === 'accepted') {
+            $message = "{$receiver_user_name} accepted your connection request";
+        } elseif ($status === 'rejected') {
+            $message = "{$receiver_user_name} rejected your connection request";
+        } elseif ($status === 'removed') {
+            $message = "{$receiver_user_name} removed the connection";
+        } else {
+            $message = "Connection status updated";
+        }
+
+        // 🔔 Insert notification (for sender)
+        $notification->insert([
+            'sender_user_id'      => $receiver_user_id, // actor
+            'sender_profile_id'   => $receiver_profile_id,
+            'sender_user_name'    => $receiver_user_name,
+
+            'receiver_user_id'    => $sender_user_id, // notify sender
+            'receiver_profile_id' => $sender_profile_id,
+            'receiver_user_name'  => $sender_user_name,
+
+            'type' => $status,
+            'reference_id' => $connection_id,
+            'message' => $message
+        ]);
 
         wp_send_json_success();
     }
@@ -587,6 +644,39 @@ class NEXORA_Page {
     }
 
     /* ===============================
+       NOTIFICATION
+    =============================== */
+    public function mark_notification_read() {
+
+        check_ajax_referer('profile_nonce', 'nonce');
+
+        if (!is_user_logged_in()) {
+            wp_send_json_error('Not logged in');
+        }
+
+        $id = intval($_POST['id']);
+        $user_id = get_current_user_id();
+
+        global $wpdb;
+        $table = $wpdb->prefix . 'nexora_notifications';
+
+        $row = $wpdb->get_row(
+            $wpdb->prepare("SELECT * FROM $table WHERE id = %d", $id)
+        );
+
+        if (!$row || $row->receiver_user_id != $user_id) {
+            wp_send_json_error('Unauthorized');
+        }
+
+        $notification = new NEXORA_Notification();
+        $notification->mark_as_read($id);
+
+        wp_send_json_success([
+            'message' => $row->message
+        ]);
+    }
+
+    /* ===============================
        RENDER PROFILE
     =============================== */
     public function render_profile() {
@@ -721,6 +811,9 @@ class NEXORA_Page {
         $profile_image = $profile_image_id ? wp_get_attachment_url($profile_image_id) : $default_profile;
         $cover_image = $cover_image_id ? wp_get_attachment_url($cover_image_id) : $default_cover;
 
+        $notification = new NEXORA_Notification();
+        $unread_count = $notification->get_unread_count($current_user_id);
+
         ob_start();
         ?>
         <div class="profile-container">
@@ -743,8 +836,20 @@ class NEXORA_Page {
                     <button class="tab-btn" data-tab="address">Address</button>
                     <button class="tab-btn" data-tab="work">Work</button>
                     <button class="tab-btn" data-tab="docs">Documents</button>
-                    <button class="tab-btn" data-tab="security">Security</button>
                     <button class="tab-btn" data-tab="connections">Connections</button>
+                    <?php if ($is_owner): ?>
+                        <button class="tab-btn" data-tab="security">Security</button>
+
+                        <button class="tab-btn" data-tab="notifications">
+                            Notifications
+
+                            <?php if ($unread_count > 0): ?>
+                                <span class="noti-badge">
+                                    <?php echo $unread_count; ?>
+                                </span>
+                            <?php endif; ?>
+                        </button>
+                    <?php endif; ?>
                 </div>
 
                 <!-- CONTENT -->
@@ -1116,9 +1221,113 @@ class NEXORA_Page {
                             <?php endif; ?>
                         </div>
                     </div>
+
+                    <!-- NOTIFICATION -->
+                    <div class="tab-content" id="notifications">
+
+                        <?php if ($is_owner): ?>
+
+                            <?php
+                            $notification = new NEXORA_Notification();
+
+                            $received = $notification->get_received($current_user_id);
+                            $sent     = $notification->get_sent($current_user_id);
+                            ?>
+
+                            <div class="notification-wrapper">
+
+                                <!-- 🔵 RECEIVED -->
+                                <h3>📥 Received Notifications</h3>
+
+                                <div class="notification-list">
+
+                                    <?php if ($received): foreach ($received as $n): ?>
+
+                                        <div class="notification-item <?php echo $n->is_read ? 'read' : 'unread'; ?>">
+
+                                            <div class="noti-content">
+
+                                                <?php
+                                                if ($n->type == 'request') {
+                                                    echo "You received a request from <b>{$n->sender_user_name}</b>";
+                                                } elseif ($n->type == 'accepted') {
+                                                    echo "<b>{$n->sender_user_name}</b> accepted your request";
+                                                } elseif ($n->type == 'rejected') {
+                                                    echo "<b>{$n->sender_user_name}</b> rejected your request";
+                                                } elseif ($n->type == 'removed') {
+                                                    echo "<b>{$n->sender_user_name}</b> removed connection";
+                                                }
+                                                ?>
+
+                                            </div>
+
+                                            <div class="noti-meta">
+                                                <button class="notification-view" data-type="view-receive-noti" data-id="<?php echo $n->id; ?>">
+                                                    View
+                                                </button>
+                                                <small><?php echo esc_html($n->created_at); ?></small>
+                                            </div>
+
+                                        </div>
+
+                                    <?php endforeach; else: ?>
+                                        <p>No received notifications</p>
+                                    <?php endif; ?>
+
+                                </div>
+
+
+                                <!-- 🟢 SENT -->
+                                <h3 style="margin-top:30px;">📤 Sent Notifications</h3>
+
+                                <div class="notification-list">
+
+                                    <?php if ($sent): foreach ($sent as $n): ?>
+
+                                        <div class="notification-item read">
+
+                                            <div class="noti-content">
+
+                                                <?php
+                                                if ($n->type == 'request') {
+                                                    echo "You sent a request to <b>{$n->receiver_user_name}</b>";
+                                                } elseif ($n->type == 'accepted') {
+                                                    echo "You accepted the request of <b>{$n->receiver_user_name}</b>";
+                                                } elseif ($n->type == 'rejected') {
+                                                    echo "You rejected the request of <b>{$n->receiver_user_name}</b>";
+                                                } elseif ($n->type == 'removed') {
+                                                    echo "You removed connection with <b>{$n->receiver_user_name}</b>";
+                                                }
+                                                ?>
+
+                                            </div>
+
+                                            <div class="noti-meta">
+                                                <button class="notification-view" data-type="view-sending-noti" data-id="<?php echo $n->id; ?>"> View </button>
+                                                <small><?php echo esc_html($n->created_at); ?></small>
+                                            </div>
+
+                                        </div>
+
+                                    <?php endforeach; else: ?>
+                                        <p>No sent notifications</p>
+                                    <?php endif; ?>
+
+                                </div>
+
+                            </div>
+
+                        <?php else: ?>
+
+                            <p>Access restricted</p>
+
+                        <?php endif; ?>
+
+                    </div>
                 </div>
             </div>
 
+            <!-- LOG OUT -->
             <?php if ($is_owner): ?>                    
                 <div style="text-align:center; margin-top:30px;">
                     <a href="<?php echo wp_logout_url(home_url('/login-page')); ?>" 
