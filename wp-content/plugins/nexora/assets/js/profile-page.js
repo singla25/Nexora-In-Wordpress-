@@ -16,16 +16,227 @@ jQuery(document).ready(function ($) {
 
 
     // ===============================
-    // UPDATE IMAGE
+    // UPDATE INFORMATION
     // ===============================
+    let data = profilePageData.userData;
+
+    console.log(data)
+
+    $(document).on('click', '.user-edit-info', function () {
+
+        let type = $(this).data('type');
+        console.log(type);
+        let html = '';
+
+        // PERSONAL
+        if (type === 'personal-info') {
+            html = `
+                <form class="info-form grid-form" data-type="personal-info">
+
+                    <div class="form-group">
+                        <label>User Name</label>
+                        <input type="text" value="${data.user_name}" disabled>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" value="${data.email}" disabled>
+                    </div>
+
+                    <div class="form-group">
+                        <label>First Name</label>
+                        <input name="first_name" value="${data.first_name || ''}">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Last Name</label>
+                        <input name="last_name" value="${data.last_name || ''}">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Phone</label>
+                        <input name="phone" value="${data.phone || ''}">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Gender</label>
+                        <select name="gender">
+                            <option value="">Select</option>
+                            <option value="male" ${data.gender==='male'?'selected':''}>Male</option>
+                            <option value="female" ${data.gender==='female'?'selected':''}>Female</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Birthdate</label>
+                        <input type="date" name="birthdate" value="${data.birthdate || ''}">
+                    </div>
+
+                    <div class="form-group">
+                        <label>LinkedIn</label>
+                        <input name="linkedin_id" value="${data.linkedin_id || ''}">
+                    </div>
+
+                    <div class="form-group full">
+                        <label>Bio</label>
+                        <textarea name="bio">${data.bio || ''}</textarea>
+                    </div>
+
+                    <button class="form-submit">Save</button>
+                </form>
+            `;
+        }
+
+        // ADDRESS
+        if (type === 'address-info') {
+            html = `
+                <form class="info-form grid-form" data-type="address-info">
+
+                    <div class="form-section">
+                        <h4>Permanent Address</h4>
+
+                        <div class="form-group full">
+                            <input name="perm_address" value="${data.perm_address || ''}" placeholder="Address">
+                        </div>
+
+                        <div class="form-group"><input name="perm_city" value="${data.perm_city || ''}" placeholder="City"></div>
+                        <div class="form-group"><input name="perm_state" value="${data.perm_state || ''}" placeholder="State"></div>
+                        <div class="form-group"><input name="perm_pincode" value="${data.perm_pincode || ''}" placeholder="Pincode"></div>
+                    </div>
+
+                    <div class="form-section">
+                        <h4>Correspondence Address</h4>
+
+                        <div class="form-group full">
+                            <input name="corr_address" value="${data.corr_address || ''}" placeholder="Address">
+                        </div>
+
+                        <div class="form-group"><input name="corr_city" value="${data.corr_city || ''}" placeholder="City"></div>
+                        <div class="form-group"><input name="corr_state" value="${data.corr_state || ''}" placeholder="State"></div>
+                        <div class="form-group"><input name="corr_pincode" value="${data.corr_pincode || ''}" placeholder="Pincode"></div>
+                    </div>
+
+                    <button class="form-submit">Save</button>
+                </form>
+            `;
+        }
+
+        // WORK
+        if (type === 'work-info') {
+            html = `
+                <form class="info-form grid-form" data-type="work-info">
+
+                    <div class="form-group"><input name="company_name" value="${data.company_name || ''}" placeholder="Company"></div>
+                    <div class="form-group"><input name="designation" value="${data.designation || ''}" placeholder="Designation"></div>
+                    <div class="form-group"><input name="company_email" value="${data.company_email || ''}" placeholder="Email"></div>
+                    <div class="form-group"><input name="company_phone" value="${data.company_phone || ''}" placeholder="Phone"></div>
+
+                    <div class="form-group full">
+                        <textarea name="company_address" placeholder="Address">${data.company_address || ''}</textarea>
+                    </div>
+
+                    <button class="form-submit">Save</button>
+                </form>
+            `;
+        }
+
+        // DOCUMENTS
+        if (type === 'docs-info') {
+
+            html = `
+                <form class="info-form docs-form" data-type="docs-info">
+
+                    <div class="docs-grid">
+
+                        ${['profile_image','cover_image','aadhaar_card','driving_license','company_id_card'].map(key => `
+                            
+                            <div class="doc-upload-card">
+
+                                <div class="doc-image-wrapper">
+
+                                    ${
+                                        data[key] 
+                                        ? `<img src="${data[key]}" class="doc-preview">`
+                                        : `<div class="doc-placeholder">No Image</div>`
+                                    }
+
+                                    <div class="doc-overlay">
+                                        <button type="button" class="upload-btn">Upload</button>
+                                        ${
+                                            data[key] 
+                                            ? `<button type="button" class="remove-btn">Remove</button>`
+                                            : ''
+                                        }
+                                    </div>
+
+                                </div>
+
+                                <span class="doc-label">
+                                    ${key.replaceAll('_',' ').toUpperCase()}
+                                </span>
+
+                                <!-- ⚠️ IMPORTANT: hidden should store ID, not URL -->
+                                <input type="hidden" name="${key}" value="${data[key + '_id'] || ''}">
+
+                            </div>
+
+                        `).join('')}
+
+                    </div>
+
+                    <button class="form-submit">Save</button>
+                </form>
+            `;
+        }
+
+        // CHANGE PASSWORD
+        if (type === 'security-info') {
+            html = `
+                <form class="info-form" data-type="security-info">
+
+                    <div class="form-group">
+                        <input type="password" name="current_password" class="pass-field" placeholder="Current Password">
+                    </div>
+
+                    <div class="form-group">
+                        <input type="password" name="new_password" class="pass-field" placeholder="New Password">
+                    </div>
+
+                    <div class="form-group">
+                        <input type="password" name="confirm_password" class="pass-field" placeholder="Confirm Password">
+                    </div>
+
+                    <!-- TOGGLE SWITCH -->
+                    <div class="show-password-wrapper">
+                        <label class="switch">
+                            <input type="checkbox" id="toggle_all_passwords">
+                            <span class="slider"></span>
+                        </label>
+                        <span class="switch-label">Show Password</span>
+                    </div>
+
+                    <button class="form-submit">Change Password</button>
+                </form>
+            `;
+        }
+
+        Swal.fire({
+            title: 'Update Your Information',
+            html: html,
+            showConfirmButton: false,
+            width: '500px'
+        });
+    });
+
+    // UPLOAD IMAGE
     $(document).on('click', '.upload-btn', function (e) {
 
         e.preventDefault();
 
-        let container = $(this).closest('.profile-upload-box, td');
+        let container = $(this).closest('.doc-upload-card');
 
         let frame = wp.media({
-            title: 'Select or Upload Image',
+            title: 'Select Image',
             button: { text: 'Use this image' },
             multiple: false
         });
@@ -34,13 +245,16 @@ jQuery(document).ready(function ($) {
 
             let attachment = frame.state().get('selection').first().toJSON();
 
+            // ✅ use SAME container (no re-query)
             container.find('input[type="hidden"]').val(attachment.id);
 
-            container.find('.profile-preview')
-                .attr('src', attachment.url)
-                .show();
-
-            container.find('.remove-btn').show();
+            container.find('.doc-image-wrapper').html(`
+                <img src="${attachment.url}" class="doc-preview">
+                <div class="doc-overlay">
+                    <button type="button" class="upload-btn">Upload</button>
+                    <button type="button" class="remove-btn">Remove</button>
+                </div>
+            `);
         });
 
         frame.open();
@@ -49,30 +263,59 @@ jQuery(document).ready(function ($) {
     // Remove Image
     $(document).on('click', '.remove-btn', function () {
 
-        let container = $(this).closest('.profile-upload-box, td');
+        let card = $(this).closest('.doc-upload-card');
+        let input = card.find('input[type="hidden"]');
+        let wrapper = card.find('.doc-image-wrapper');
 
-        container.find('input[type="hidden"]').val('');
-        container.find('.profile-preview').hide();
+        // ✅ get existing ID (optional debug)
+        let oldId = input.val();
+        console.log("Removing ID:", oldId);
 
-        $(this).hide();
+        // ✅ clear value (this is actual remove signal)
+        input.val('');
+
+        // ✅ update UI
+        wrapper.html(`
+            <div class="doc-placeholder">No Image</div>
+            <div class="doc-overlay">
+                <button type="button" class="upload-btn">Upload</button>
+            </div>
+        `);
     });
 
+    // Toggle button in Security Tab
+    $(document).on('change', '#toggle_all_passwords', function () {
 
-    // ===============================
-    // UPDATE INFORMATION
-    // ===============================
-    $(document).on('submit', '.profile-page-form', function (e) {
+        let type = $(this).is(':checked') ? 'text' : 'password';
+
+        $('.pass-field').attr('type', type);
+
+        $('.switch-label').text(
+            $(this).is(':checked') ? 'Hide Password' : 'Show Password'
+        );
+    });
+
+    // Submit Information
+    $(document).on('submit', '.info-form', function (e) {
 
         e.preventDefault();
 
         let form = this;
+        let type = $(form).data('type');
+
+        let action = '';
+
+        // MAP TYPE → AJAX ACTION
+        if (type === 'personal-info') action = 'update_personal_info';
+        if (type === 'address-info')  action = 'update_address_info';
+        if (type === 'work-info')     action = 'update_work_info';
+        if (type === 'docs-info')     action = 'update_documents_info';
+        if (type === 'security-info') action = 'update_profile_password';
+
         let formData = new FormData(form);
 
-        formData.append('action', 'profile_update');
+        formData.append('action', action);
         formData.append('nonce', profilePageData.nonce);
-
-        let submitBtn = $(form).find('button[type="submit"]');
-        submitBtn.prop('disabled', true);
 
         Swal.fire({
             title: 'Saving...',
@@ -92,31 +335,26 @@ jQuery(document).ready(function ($) {
                 if (typeof res === 'string') res = JSON.parse(res);
 
                 if (res.success) {
+
                     Swal.fire({
                         icon: 'success',
-                        title: 'Saved!',
-                        text: 'Profile updated successfully'
-                    }).then(() => {
-                        setTimeout(() => location.reload(), 500);
-                    });
+                        title: res.data,
+                        timer: 1500,
+                        showConfirmButton: false
+                    }).then(() => location.reload());
+
                 } else {
-                    Swal.fire('Error', res.data || 'Something went wrong', 'error');
+                    Swal.fire('Error', res.data, 'error');
                 }
-
-                submitBtn.prop('disabled', false);
-            },
-
-            error: function () {
-                Swal.fire('Error', 'Server error', 'error');
-                submitBtn.prop('disabled', false);
             }
         });
     });
 
 
     // ===============================
-    // ADD NEW CONNECTION
+    // CONNECTION TAB
     // ===============================
+    // ADD NEW CONNECTION 
     $(document).on('click', '.conn-tab[data-type="add"]', function () {
 
         $.post(profilePageData.ajaxUrl, {
@@ -188,10 +426,7 @@ jQuery(document).ready(function ($) {
         });
     });
 
-
-    // ===============================
     // REQUESTS
-    // ===============================
     $(document).on('click', '.conn-tab[data-type="requests"]', function () {
 
         $.post(profilePageData.ajaxUrl, {
@@ -276,9 +511,7 @@ jQuery(document).ready(function ($) {
 
     });
 
-    // ===============================
     // REMOVE CONNECTION
-    // ===============================
     $(document).on('click', '.remove-connection-btn', function () {
 
         let id = $(this).data('id');
@@ -318,9 +551,7 @@ jQuery(document).ready(function ($) {
 
     });
 
-    // ===============================
     // HISTORY
-    // ===============================
     $(document).on('click', '.conn-tab[data-type="history"]', function () {
 
         $.post(profilePageData.ajaxUrl, {
@@ -339,9 +570,7 @@ jQuery(document).ready(function ($) {
         });
     });
 
-    // ===============================
     // VIEW ALL CONNECTIONS
-    // ===============================
     $(document).on('click', '[data-type="view-all-conn"]', function () {
 
         let profileId = $(this).data('profile');
@@ -365,9 +594,7 @@ jQuery(document).ready(function ($) {
         });
     });
 
-    // ===============================
     // VIEW MUTUAL CONNECTIONS
-    // ===============================
     $(document).on('click', '[data-type="view-common-conn"]', function () {
 
         let profileId = $(this).data('profile');
@@ -391,69 +618,9 @@ jQuery(document).ready(function ($) {
         });
     });
 
-    // ===============================
-    // CHANGE PASSWORD
-    // ===============================
-    $(document).on('submit', '#change-password-form', function (e) {
-
-        e.preventDefault();
-
-        let form = $(this);
-
-        let data = form.serialize();
-
-        $.post(profilePageData.ajaxUrl, {
-            action: 'change_password',
-            nonce: profilePageData.nonce,
-            ...Object.fromEntries(new URLSearchParams(data))
-        }, function (res) {
-
-            if (res.success) {
-
-                Swal.fire({
-                    icon: 'success',
-                    text: res.data
-                });
-
-                form.trigger('reset');
-
-            } else {
-
-                Swal.fire({
-                    icon: 'error',
-                    text: res.data
-                });
-
-            }
-        });
-    });
-
-    // Toggle Eye in password
-    $(document).on('click', '.toggle-pass', function () {
-
-        let input = $(this).siblings('input');
-        let isPassword = input.attr('type') === 'password';
-
-        input.attr('type', isPassword ? 'text' : 'password');
-
-        $(this).html(
-            isPassword
-                ? `<svg viewBox="0 0 24 24" width="18" height="18">
-                        <path d="M3 3l18 18" stroke="black" stroke-width="2" stroke-linecap="round"/>
-                        <path d="M10.58 10.58a2 2 0 002.83 2.83" stroke="black" stroke-width="2" fill="none"/>
-                        <path d="M9.88 5.09A9.77 9.77 0 0112 5c6 0 10 7 10 7a17.57 17.57 0 01-2.17 3.19" stroke="black" stroke-width="2" fill="none"/>
-                        <path d="M6.61 6.61A17.58 17.58 0 002 12s4 7 10 7a9.77 9.77 0 004.91-1.34" stroke="black" stroke-width="2" fill="none"/>
-                </svg>`
-                : `<svg viewBox="0 0 24 24" width="18" height="18">
-                        <path d="M12 5C6 5 2 12 2 12s4 7 10 7 10-7 10-7-4-7-10-7z" fill="none" stroke="black" stroke-width="2"/>
-                        <circle cx="12" cy="12" r="3" fill="none" stroke="black" stroke-width="2"/>
-                </svg>`
-        );
-
-    });
 
     // ===============================
-    // VIEW NOTIFICATION
+    // NOTIFICATION TAB
     // ===============================
     $(document).on('click', '.notification-view', function (e) {
 
@@ -496,9 +663,11 @@ jQuery(document).ready(function ($) {
         }
     });
 
+    
     // ===============================
-    // VIEW POST CONTENT
+    // CONTENT TAB
     // ===============================
+    // VIEW POST
     $(document).on('click', '.view-post', function (e) {
 
         e.stopPropagation(); // prevent parent click
@@ -556,9 +725,7 @@ jQuery(document).ready(function ($) {
         });
     });
 
-    // ===============================
     // ADD NEW CONTENT
-    // ===============================
     $(document).on('click', '.content-tab[data-type="add"]', function () {
 
         let html = `
@@ -664,9 +831,7 @@ jQuery(document).ready(function ($) {
         });
     });
 
-    // ===============================
     // CONTENT HISTORY
-    // ===============================
     $(document).on('click', '.content-tab[data-type="history"]', function () {
 
         $.post(profilePageData.ajaxUrl, {
@@ -700,6 +865,4 @@ jQuery(document).ready(function ($) {
             width: '600px'
         });
     });
-
-    
 });

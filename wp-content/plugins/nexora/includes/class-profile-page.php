@@ -13,41 +13,28 @@ class NEXORA_Page {
         add_filter('ajax_query_attachments_args', [$this, 'image_filter']); 
         add_action('init', [$this, 'allow_user_uploads']);
 
-        add_action('wp_ajax_profile_update', [$this, 'profile_update']);
-        add_action('wp_ajax_nopriv_profile_update', [$this, 'profile_update']);
-
+        // USER INFO
+        add_action('wp_ajax_update_personal_info', [$this, 'update_personal_info']);
+        add_action('wp_ajax_update_address_info', [$this, 'update_address_info']);
+        add_action('wp_ajax_update_work_info', [$this, 'update_work_info']);
+        add_action('wp_ajax_update_documents_info', [$this, 'update_documents_info']);
+        add_action('wp_ajax_update_profile_password', [$this, 'update_profile_password']);
+        
+        // CONNECTION TAB
         add_action('wp_ajax_get_add_new_users', [$this, 'get_add_new_users']);
-        add_action('wp_ajax_nopriv_add_new_users', [$this, 'add_new_users']);
-
         add_action('wp_ajax_send_connection_request', [$this, 'send_connection_request']);
-        add_action('wp_ajax_nopriv_send_connection_request', [$this, 'send_connection_request']);
-
         add_action('wp_ajax_get_requests', [$this, 'get_requests']);
-        add_action('wp_ajax_nopriv_get_requests', [$this, 'get_requests']);
-
         add_action('wp_ajax_update_connection_status', [$this, 'update_connection_status']);
-        add_action('wp_ajax_nopriv_update_connection_status', [$this, 'update_connection_status']);
-
-        add_action('wp_ajax_view_all_connection', [$this, 'view_all_connection']);
-        add_action('wp_ajax_nopriv_view_all_connection', [$this, 'view_all_connection']);
-
-        add_action('wp_ajax_view_mutual_connection', [$this, 'view_mutual_connection']);
-        add_action('wp_ajax_nopriv_view_mutual_connection', [$this, 'view_mutual_connection']);
-
         add_action('wp_ajax_get_history', [$this, 'get_history']);
-        add_action('wp_ajax_nopriv_get_history', [$this, 'get_history']);
-
-        add_action('wp_ajax_change_password', [$this, 'change_password']);
-        add_action('wp_ajax_nopriv_change_password', [$this, 'change_password']);
-
+        add_action('wp_ajax_view_all_connection', [$this, 'view_all_connection']);
+        add_action('wp_ajax_view_mutual_connection', [$this, 'view_mutual_connection']);
+        
+        // NOTIFICATION
         add_action('wp_ajax_mark_notification_read', [$this, 'mark_notification_read']);
-        add_action('wp_ajax_nopriv_mark_notification_read', [$this, 'mark_notification_read']);
 
+        // USER CONTENT
         add_action('wp_ajax_save_user_content', [$this, 'save_user_content']);
-        add_action('wp_ajax_nopriv_save_user_content', [$this, 'save_user_content']);
-
         add_action('wp_ajax_get_user_content_history', [$this, 'get_user_content_history']);
-        add_action('wp_ajax_nopriv_get_user_content_history', [$this, 'get_user_content_history']);
     }
 
     /* ===============================
@@ -69,10 +56,68 @@ class NEXORA_Page {
 
         wp_enqueue_media(); // To upload Media by Using wp.media()
 
+        // FIX STARTS HERE
+        $profile_id = 0;
+        $email = '';
+        $phone = '';
+
+        if (is_user_logged_in()) {
+            $user_id = get_current_user_id();
+            $profile_id = get_user_meta($user_id, '_profile_id', true);
+
+            $email = get_post_meta($profile_id,'email',true);
+            $phone = get_post_meta($profile_id,'phone',true);
+        }
+
         wp_localize_script('profile-page-js', 'profilePageData', [
             'ajaxUrl' => admin_url('admin-ajax.php'),
             'nonce'   => wp_create_nonce('profile_nonce'),
-            'homeUrl' => home_url()
+            'homeUrl' => home_url(),
+
+            // USER INFORMATION BLOCK
+            'userData' => [
+                'profile_id' => $profile_id,
+                'user_name'  => get_post_meta($profile_id,'user_name',true),
+                'email'      => $email,
+                'phone'      => $phone,
+
+                'first_name' => get_post_meta($profile_id,'first_name',true),
+                'last_name'  => get_post_meta($profile_id,'last_name',true),
+                'gender'     => get_post_meta($profile_id,'gender',true),
+                'birthdate'  => get_post_meta($profile_id,'birthdate',true),
+                'linkedin_id'=> get_post_meta($profile_id,'linkedin_id',true),
+                'bio'        => get_post_meta($profile_id,'bio',true),
+
+                // ADDRESS
+                'perm_address'=> get_post_meta($profile_id,'perm_address',true),
+                'perm_city'   => get_post_meta($profile_id,'perm_city',true),
+                'perm_state'  => get_post_meta($profile_id,'perm_state',true),
+                'perm_pincode'=> get_post_meta($profile_id,'perm_pincode',true),
+
+                'corr_address'=> get_post_meta($profile_id,'corr_address',true),
+                'corr_city'   => get_post_meta($profile_id,'corr_city',true),
+                'corr_state'  => get_post_meta($profile_id,'corr_state',true),
+                'corr_pincode'=> get_post_meta($profile_id,'corr_pincode',true),
+
+                // WORK
+                'company_name'   => get_post_meta($profile_id,'company_name',true),
+                'designation'    => get_post_meta($profile_id,'designation',true),
+                'company_email'  => get_post_meta($profile_id,'company_email',true),
+                'company_phone'  => get_post_meta($profile_id,'company_phone',true),
+                'company_address'=> get_post_meta($profile_id,'company_address',true),
+
+                // DOCUMENTS (IDs)
+                'profile_image_id' => get_post_meta($profile_id,'profile_image',true),
+                'profile_image'   => wp_get_attachment_url(get_post_meta($profile_id,'profile_image',true)),
+                'cover_image_id' => get_post_meta($profile_id,'cover_image',true),
+                'cover_image'     => wp_get_attachment_url(get_post_meta($profile_id,'cover_image',true)),
+                'aadhaar_card_id' => get_post_meta($profile_id,'aadhaar_card',true),
+                'aadhaar_card'    => wp_get_attachment_url(get_post_meta($profile_id,'aadhaar_card',true)),
+                'driving_license_id' => get_post_meta($profile_id,'driving_license',true),
+                'driving_license' => wp_get_attachment_url(get_post_meta($profile_id,'driving_license',true)),
+                'company_id_card_id' => get_post_meta($profile_id,'company_id_card',true),
+                'company_id_card' => wp_get_attachment_url(get_post_meta($profile_id,'company_id_card',true)),
+            ]
         ]);
     }
 
@@ -91,10 +136,164 @@ class NEXORA_Page {
         $vars[] = 'username';
         return $vars;
     }
+    
+    /* ===============================
+       UPDATE USER INFORMATION
+    =============================== */
+    private function get_profile_id() {
+
+        if (!is_user_logged_in()) {
+            wp_send_json_error('User not logged in');
+        }
+
+        $user_id = get_current_user_id();
+        $profile_id = get_user_meta($user_id, '_profile_id', true);
+
+        if (!$profile_id) {
+            wp_send_json_error('Profile not found');
+        }
+
+        return $profile_id;
+    }
+
+    private function verify_owner() {
+
+        if (!is_user_logged_in()) {
+            wp_send_json_error('Unauthorized');
+        }
+    }
+
+    // PERSONAL INFO
+    public function update_personal_info() {
+
+        check_ajax_referer('profile_nonce','nonce');
+
+        $this->verify_owner();
+
+        $id = $this->get_profile_id();
+
+        $fields = ['first_name','last_name','phone','gender','birthdate','linkedin_id','bio'];
+
+        foreach ($fields as $field) {
+            if (isset($_POST[$field])) {
+                update_post_meta($id, $field, sanitize_text_field($_POST[$field]));
+            }
+        }
+
+        wp_send_json_success('Personal Info Updated');
+    }
+
+    // ADDRESS INFO
+    public function update_address_info() {
+
+        check_ajax_referer('profile_nonce','nonce');
+
+        $this->verify_owner();
+
+        $id = $this->get_profile_id();
+
+        $fields = ['perm_address','perm_city','perm_state','perm_pincode','corr_address','corr_city','corr_state','corr_pincode'];
+
+        foreach ($fields as $field) {
+            update_post_meta($id, $field, sanitize_text_field($_POST[$field]));
+        }
+
+        wp_send_json_success('Address Info Updated');
+    }
+
+    // WORK INFO
+    public function update_work_info() {
+
+        check_ajax_referer('profile_nonce','nonce');
+
+        $this->verify_owner();
+
+        $id = $this->get_profile_id();
+
+        $fields = ['company_name','designation','company_email','company_phone','company_address'];
+
+        foreach ($fields as $field) {
+            if (isset($_POST[$field])) {
+                update_post_meta($id, $field, sanitize_text_field($_POST[$field]));
+            }
+        }
+
+        wp_send_json_success('Work Info Updated');
+    }
+
+    // DOCUMENTS 
+    public function update_documents_info() {
+
+        check_ajax_referer('profile_nonce','nonce');
+
+        $this->verify_owner();
+
+        $id = $this->get_profile_id();
+
+        $fields = ['profile_image','cover_image','aadhaar_card','driving_license','company_id_card'];
+
+        foreach ($fields as $field) {
+
+            if (!isset($_POST[$field])) continue;
+
+            $value = $_POST[$field];
+
+            // REMOVE CASE (IMPORTANT)
+            if ($value === '') {
+                delete_post_meta($id, $field);
+            }
+
+            // UPDATE CASE
+            else {
+                update_post_meta($id, $field, intval($value));
+            }
+        }
+
+        wp_send_json_success('Documents updated');
+    }
+
+    // CHANGE PASSWORD
+    public function update_profile_password() {
+
+        check_ajax_referer('profile_nonce', 'nonce');
+
+        if (!is_user_logged_in()) {
+            wp_send_json_error('Not logged in');
+        }
+
+        $user_id = get_current_user_id();
+
+        $current_password = $_POST['current_password'];
+        $new_password     = $_POST['new_password'];
+        $confirm_password = $_POST['confirm_password'];
+
+        // 🔐 Check current password
+        $user = get_user_by('id', $user_id);
+
+        if (!wp_check_password($current_password, $user->user_pass, $user_id)) {
+            wp_send_json_error('Current password is incorrect');
+        }
+
+        // ❌ match check
+        if ($new_password !== $confirm_password) {
+            wp_send_json_error('Passwords do not match');
+        }
+
+        // ❌ prevent same password
+        if ($current_password === $new_password) {
+            wp_send_json_error('New password must be different');
+        }
+
+        // ✅ Update password
+        wp_set_password($new_password, $user_id);
+
+        wp_send_json_success('Password updated successfully');
+    }
 
     /* ===============================
-       GET NEW USER
+       CONNECTION TAB
     =============================== */
+    // GET NEW USER
     public function get_add_new_users() {
 
         check_ajax_referer('profile_nonce', 'nonce');
@@ -157,9 +356,7 @@ class NEXORA_Page {
         wp_send_json_success($data);
     }
 
-    /* ===============================
-       SEND CONNECTION REQUEST
-    =============================== */
+    // SEND CONNECTION REQUEST
     public function send_connection_request() {
 
         check_ajax_referer('profile_nonce', 'nonce');
@@ -209,9 +406,7 @@ class NEXORA_Page {
         wp_send_json_success('Request sent');
     }
 
-    /* ===============================
-       GET REQUESTS
-    =============================== */
+    // GET REQUESTS
     public function get_requests() {
 
         check_ajax_referer('profile_nonce', 'nonce');
@@ -252,9 +447,7 @@ class NEXORA_Page {
         wp_send_json_success($data);
     }
 
-    /* ===============================
-       REQUEST ACCEPTED Or Rejected
-    =============================== */
+    // REQUEST ACCEPTED Or Rejected
     public function update_connection_status() {
 
         check_ajax_referer('profile_nonce', 'nonce');
@@ -304,9 +497,7 @@ class NEXORA_Page {
         wp_send_json_success();
     }
 
-    /* ===============================
-       HISTORY
-    =============================== */
+    // HISTORY
     public function get_history() {
 
         check_ajax_referer('profile_nonce', 'nonce');
@@ -421,9 +612,7 @@ class NEXORA_Page {
         wp_send_json_success($html);
     }
 
-    /* ===============================
-       VIEW ALL CONNECTIONS
-    =============================== */
+    // VIEW ALL CONNECTIONS
     public function view_all_connection() {
 
         check_ajax_referer('profile_nonce', 'nonce');
@@ -498,9 +687,7 @@ class NEXORA_Page {
         wp_send_json_success($html);
     }
 
-    /* ===============================
-       VIEW MUTUAL CONNECTIONS
-    =============================== */
+    // VIEW MUTUAL CONNECTIONS
     public function view_mutual_connection() {
 
         check_ajax_referer('profile_nonce', 'nonce');
@@ -610,46 +797,6 @@ class NEXORA_Page {
     }
 
     /* ===============================
-       CHANGE PASSWORD
-    =============================== */
-    public function change_password() {
-
-        check_ajax_referer('profile_nonce', 'nonce');
-
-        if (!is_user_logged_in()) {
-            wp_send_json_error('Not logged in');
-        }
-
-        $user_id = get_current_user_id();
-
-        $current_password = $_POST['current_password'];
-        $new_password     = $_POST['new_password'];
-        $confirm_password = $_POST['confirm_password'];
-
-        // 🔐 Check current password
-        $user = get_user_by('id', $user_id);
-
-        if (!wp_check_password($current_password, $user->user_pass, $user_id)) {
-            wp_send_json_error('Current password is incorrect');
-        }
-
-        // ❌ match check
-        if ($new_password !== $confirm_password) {
-            wp_send_json_error('Passwords do not match');
-        }
-
-        // ❌ prevent same password
-        if ($current_password === $new_password) {
-            wp_send_json_error('New password must be different');
-        }
-
-        // ✅ Update password
-        wp_set_password($new_password, $user_id);
-
-        wp_send_json_success('Password updated successfully');
-    }
-
-    /* ===============================
        NOTIFICATION
     =============================== */
     public function mark_notification_read() {
@@ -683,8 +830,9 @@ class NEXORA_Page {
     }
 
     /* ===============================
-       ADD NEW CONTENT
+       USER CONTENT
     =============================== */
+    // ADD NEW CONTENT
     public function save_user_content() {
 
         check_ajax_referer('profile_nonce', 'nonce');
@@ -728,9 +876,7 @@ class NEXORA_Page {
         wp_send_json_success('Post created');
     }
 
-    /* ===============================
-       CONTENT HISTORY
-    =============================== */
+    //  HISTORY
     public function get_user_content_history() {
 
         check_ajax_referer('profile_nonce', 'nonce');
@@ -966,19 +1112,12 @@ class NEXORA_Page {
 
                 <!-- TABS -->
                 <div class="profile-tabs">
-                    <button class="tab-btn active" data-tab="personal">Personal</button>
-                    <button class="tab-btn" data-tab="address">Address</button>
-                    <button class="tab-btn" data-tab="work">Work</button>
-                    <button class="tab-btn" data-tab="docs">Documents</button>
+                    <button class="tab-btn active" data-tab="user-info">User Information</button>
                     <button class="tab-btn" data-tab="connections">Connections</button>
                     <?php if ($is_owner): ?>
-                        <button class="tab-btn" data-tab="security">Security</button>
-
                         <button class="tab-btn" data-tab="content">Content</button>
-
                         <button class="tab-btn" data-tab="notifications">
                             Notifications
-
                             <?php if ($unread_count > 0): ?>
                                 <span class="noti-badge">
                                     <?php echo $unread_count; ?>
@@ -990,202 +1129,230 @@ class NEXORA_Page {
 
                 <!-- CONTENT -->
                 <div class="profile-content">
-                    <!-- PERSONAL -->
-                    <div class="tab-content active" id="personal">
-                        <form class="profile-page-form <?php echo !$is_owner ? 'view-only' : ''; ?>">
-
-                            <input type="hidden" name="id" value="<?php echo $profile_id; ?>">
-
-                            <input type="text" value="<?php echo esc_attr(get_post_meta($profile_id,'user_name',true)); ?>" disabled placeholder="User Name">
-
-                            <input type="email" value="<?php echo esc_attr($email); ?>" disabled placeholder="Email">
-
-                            <input type="text" name="first_name" value="<?php echo esc_attr(get_post_meta($profile_id,'first_name',true)); ?>" placeholder="First Name">
-
-                            <input type="text" name="last_name" value="<?php echo esc_attr(get_post_meta($profile_id,'last_name',true)); ?>" placeholder="Last Name">
-
-                            <input type="text" name="phone" value="<?php echo esc_attr($phone); ?>" placeholder="Phone">
-
-                            <select name="gender">
-                                <option value="">Select Gender</option>
-                                <option value="male" <?php selected(get_post_meta($profile_id,'gender',true),'male'); ?>>Male</option>
-                                <option value="female" <?php selected(get_post_meta($profile_id,'gender',true),'female'); ?>>Female</option>
-                                <option value="other" <?php selected(get_post_meta($profile_id,'gender',true),'other'); ?>>Other</option>
-                            </select>
-
-                            <input type="date" name="birthdate" value="<?php echo esc_attr(get_post_meta($profile_id,'birthdate',true)); ?>">
-
-                            <input type="text" name="linkedin_id" value="<?php echo esc_attr(get_post_meta($profile_id,'linkedin_id',true)); ?>" placeholder="Linked In URL">
-
-                            <textarea name="bio" placeholder="Enter your bio here..."><?php echo esc_textarea(get_post_meta($profile_id,'bio',true)); ?></textarea>
-
+                    <!-- User Information -->
+                    <div class="tab-content active" id="user-info">
+                        <div class="user-info-header">
                             <?php if ($is_owner): ?>
-                                <button type="submit">Save</button>
-                            <?php endif; ?>
-                        </form>
-                    </div>
-
-                    <!-- ADDRESS -->
-                    <div class="tab-content" id="address">
-                        <form class="profile-page-form <?php echo !$is_owner ? 'view-only' : ''; ?>">
-
-                            <input type="hidden" name="id" value="<?php echo $profile_id; ?>">
-
-                            <div class="address-section">
-                                <h4>Permanent Address</h4>
                                 
-                                <input type="text" name="perm_address" value="<?php echo esc_attr(get_post_meta($profile_id,'perm_address',true)); ?>" placeholder="Address">
-                                <input type="text" name="perm_city" value="<?php echo esc_attr(get_post_meta($profile_id,'perm_city',true)); ?>" placeholder="City">
-                                <input type="text" name="perm_state" value="<?php echo esc_attr(get_post_meta($profile_id,'perm_state',true)); ?>" placeholder="State">
-                                <input type="text" name="perm_pincode" value="<?php echo esc_attr(get_post_meta($profile_id,'perm_pincode',true)); ?>" placeholder="Pincode">
-                            </div>
-
-                            <div class="address-section">
-                                <h4>Correspondence Address</h4>
-                                
-                                <input type="text" name="corr_address" value="<?php echo esc_attr(get_post_meta($profile_id,'corr_address',true)); ?>" placeholder="Address">
-                                <input type="text" name="corr_city" value="<?php echo esc_attr(get_post_meta($profile_id,'corr_city',true)); ?>" placeholder="City">
-                                <input type="text" name="corr_state" value="<?php echo esc_attr(get_post_meta($profile_id,'corr_state',true)); ?>" placeholder="State">
-                                <input type="text" name="corr_pincode" value="<?php echo esc_attr(get_post_meta($profile_id,'corr_pincode',true)); ?>" placeholder="Pincode">
-                            </div>
-
-                            <?php if ($is_owner): ?>
-                                <button type="submit">Save</button>
-                            <?php endif; ?>
-                        </form>
-                    </div>
-
-                    <!-- WORK -->
-                    <div class="tab-content" id="work">
-                        <form class="profile-page-form <?php echo !$is_owner ? 'view-only' : ''; ?>">
-
-                            <input type="hidden" name="id" value="<?php echo $profile_id; ?>">
-
-                            <input type="text" name="company_name" value="<?php echo esc_attr(get_post_meta($profile_id,'company_name',true)); ?>" placeholder="Company Name">
-
-                            <input type="text" name="designation" value="<?php echo esc_attr(get_post_meta($profile_id,'designation',true)); ?>" placeholder="Designation">
-
-                            <input type="email" name="company_email" value="<?php echo esc_attr(get_post_meta($profile_id,'company_email',true)); ?>" placeholder="Company Email">
-
-                            <input type="text" name="company_phone" value="<?php echo esc_attr(get_post_meta($profile_id,'company_phone',true)); ?>" placeholder="Company Phone">
-
-                            <input type="text" name="company_address" value="<?php echo esc_attr(get_post_meta($profile_id,'company_address',true)); ?>" placeholder="Company Address">
-
-                            <?php if ($is_owner): ?>
-                                <button type="submit">Save</button>
-                            <?php endif; ?>
-                        </form>
-                    </div>
-
-                    <!-- DOCS -->
-                    <div class="tab-content" id="docs">
-                        <form class="profile-page-form <?php echo !$is_owner ? 'view-only' : ''; ?>" enctype="multipart/form-data">
-
-                            <input type="hidden" name="id" value="<?php echo $profile_id; ?>">
-
-                            <?php
-                            $fields = [
-                                'profile_image'   => 'Profile Image',
-                                'cover_image'     => 'Cover Image',
-                                'aadhaar_card'    => 'Aadhar Card',
-                                'driving_license' => 'Driving License',
-                                'company_id_card' => 'Company ID Card'
-                            ];
-
-                            foreach ($fields as $key => $label) {
-
-                                $image_id  = get_post_meta($profile_id, $key, true);
-                                $image_url = $image_id ? wp_get_attachment_url($image_id) : '';
-                            ?>
-
-                                <div class="profile-upload-box">
-
-                                    <label><?php echo esc_html($label); ?></label>
-
-                                    <img 
-                                        src="<?php echo esc_url($image_url); ?>" 
-                                        class="profile-preview"
-                                        style="display:<?php echo $image_url ? 'block' : 'none'; ?>; max-width:120px;"
-                                    >
-
-                                    <input type="hidden" name="<?php echo esc_attr($key); ?>" value="<?php echo esc_attr($image_id); ?>">
-
-                                    <?php if ($is_owner): ?>
-                                        <button type="button" class="upload-btn">Upload</button>
-                                        <button type="button" class="remove-btn" style="<?php echo $image_url ? '' : 'display:none;'; ?>">Remove</button>
-                                    <?php endif; ?>
+                                <div class="user-info-left">
+                                    <h3>Your Information</h3>
+                                    <span class="user-info-sub">Manage your Informations</span>
                                 </div>
 
-                            <?php } ?>
-
-                            <?php if ($is_owner): ?>
-                                <button type="submit">Upload</button>
-                            <?php endif; ?>
-
-                        </form>
-                    </div>
-
-                    <!-- Security -->
-                    <div class="tab-content" id="security">
-
-                        <?php if ($is_owner): ?>
-
-                        <form id="change-password-form" class="profile-page-form">
-
-                            <div class="password-field">
-                                <input type="password" name="current_password" placeholder="Current Password" required>
-                                <span class="toggle-pass">
-                                    <svg viewBox="0 0 24 24" width="18" height="18">
-                                        <path d="M12 5C6 5 2 12 2 12s4 7 10 7 10-7 10-7-4-7-10-7z"
-                                            fill="none" stroke="black" stroke-width="2"/>
-                                        <circle cx="12" cy="12" r="3"
-                                                fill="none" stroke="black" stroke-width="2"/>
-                                    </svg>
-                                </span>
-                            </div>
-
-                            <div class="password-field">
-                                <input type="password" name="new_password" placeholder="New Password" required>
-                                <span class="toggle-pass">
-                                    <svg viewBox="0 0 24 24" width="18" height="18">
-                                        <path d="M12 5C6 5 2 12 2 12s4 7 10 7 10-7 10-7-4-7-10-7z"
-                                            fill="none" stroke="black" stroke-width="2"/>
-                                        <circle cx="12" cy="12" r="3"
-                                                fill="none" stroke="black" stroke-width="2"/>
-                                    </svg>
-                                </span>
-                            </div>
-
-                            <div class="password-field">
-                                <input type="password" name="confirm_password" placeholder="Confirm Password" required>
-                                <span class="toggle-pass">
-                                    <svg viewBox="0 0 24 24" width="18" height="18">
-                                        <path d="M12 5C6 5 2 12 2 12s4 7 10 7 10-7 10-7-4-7-10-7z"
-                                            fill="none" stroke="black" stroke-width="2"/>
-                                        <circle cx="12" cy="12" r="3"
-                                                fill="none" stroke="black" stroke-width="2"/>
-                                    </svg>
-                                </span>
-                            </div>
-
-                            <button type="submit">Update Password</button>
-
-                        </form>
-
-                        <?php else: ?>
-                            <div class="security-error-box">
-
-                                <div class="security-error-icon">
-                                    🔒
+                                <div class="user-info-right">
+                                    <button class="user-edit-info active" data-type="personal-info">Personal</button>
+                                    <button class="user-edit-info" data-type="address-info">Address</button>
+                                    <button class="user-edit-info" data-type="work-info">Work</button>
+                                    <button class="user-edit-info" data-type="docs-info">Documents</button>
+                                    <button class="user-edit-info" data-type="security-info">Security</button>
                                 </div>
 
-                                <h3>Access Restricted</h3>
+                            <?php else: ?>
+                                <div class="user-info-center">
+                                    <h3>User Information</h3>
+                                    <span class="user-info-sub">Login to explore more</span>
+                                </div>
+                            <?php endif; ?>
+                        </div>
 
-                                <p>You can only change your own password.</p>
+                        <div id="user-info-content">
+                            <!-- ===============================
+                                PERSONAL INFO
+                            =============================== -->
+                            <div class="info-card">
+                                <h3>Personal Information</h3>
 
+                                <div class="info-grid">
+
+                                    <div class="info-item">
+                                        <span class="info-label">Full Name</span>
+                                        <span class="info-value"><?php echo esc_html($name); ?></span>
+                                    </div>
+
+                                    <div class="info-item">
+                                        <span class="info-label">Username</span>
+                                        <span class="info-value"><?php echo esc_html($username); ?></span>
+                                    </div>
+
+                                    <div class="info-item">
+                                        <span class="info-label">Email</span>
+                                        <span class="info-value"><?php echo esc_html($email); ?></span>
+                                    </div>
+
+                                    <div class="info-item">
+                                        <span class="info-label">Phone</span>
+                                        <span class="info-value"><?php echo esc_html($phone); ?></span>
+                                    </div>
+
+                                    <div class="info-item">
+                                        <span class="info-label">First Name</span>
+                                        <span class="info-value"><?php echo esc_html(get_post_meta($profile_id,'first_name',true)); ?></span>
+                                    </div>
+
+                                    <div class="info-item">
+                                        <span class="info-label">Last Name</span>
+                                        <span class="info-value"><?php echo esc_html(get_post_meta($profile_id,'last_name',true)); ?></span>
+                                    </div>
+
+                                    <div class="info-item">
+                                        <span class="info-label">Gender</span>
+                                        <span class="info-value"><?php echo esc_html(get_post_meta($profile_id,'gender',true)); ?></span>
+                                    </div>
+
+                                    <div class="info-item">
+                                        <span class="info-label">Birthdate</span>
+                                        <span class="info-value"><?php echo esc_html(get_post_meta($profile_id,'birthdate',true)); ?></span>
+                                    </div>
+
+                                    <div class="info-item">
+                                        <span class="info-label">LinkedIn</span>
+                                        <span class="info-value"><?php echo esc_html(get_post_meta($profile_id,'linkedin_id',true)); ?></span>
+                                    </div>
+
+                                </div>
+
+                                <div class="info-full">
+                                    <span class="info-label">Bio</span>
+                                    <p class="info-value"><?php echo esc_html(get_post_meta($profile_id,'bio',true)); ?></p>
+                                </div>
                             </div>
-                        <?php endif; ?>
 
+
+                            <!-- ===============================
+                                ADDRESS INFO
+                            =============================== -->
+                            <div class="info-card">
+                                <h3>Address Information</h3>
+
+                                <!-- PERMANENT -->
+                                <div class="info-section">
+                                    <h4>Permanent Address</h4>
+
+                                    <div class="info-grid">
+                                        <div class="info-item">
+                                            <span class="info-label">Address</span>
+                                            <span class="info-value"><?php echo esc_html(get_post_meta($profile_id,'perm_address',true)); ?></span>
+                                        </div>
+
+                                        <div class="info-item">
+                                            <span class="info-label">City</span>
+                                            <span class="info-value"><?php echo esc_html(get_post_meta($profile_id,'perm_city',true)); ?></span>
+                                        </div>
+
+                                        <div class="info-item">
+                                            <span class="info-label">State</span>
+                                            <span class="info-value"><?php echo esc_html(get_post_meta($profile_id,'perm_state',true)); ?></span>
+                                        </div>
+
+                                        <div class="info-item">
+                                            <span class="info-label">Pincode</span>
+                                            <span class="info-value"><?php echo esc_html(get_post_meta($profile_id,'perm_pincode',true)); ?></span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- CORRESPONDENCE -->
+                                <div class="info-section">
+                                    <h4>Correspondence Address</h4>
+
+                                    <div class="info-grid">
+                                        <div class="info-item">
+                                            <span class="info-label">Address</span>
+                                            <span class="info-value"><?php echo esc_html(get_post_meta($profile_id,'corr_address',true)); ?></span>
+                                        </div>
+
+                                        <div class="info-item">
+                                            <span class="info-label">City</span>
+                                            <span class="info-value"><?php echo esc_html(get_post_meta($profile_id,'corr_city',true)); ?></span>
+                                        </div>
+
+                                        <div class="info-item">
+                                            <span class="info-label">State</span>
+                                            <span class="info-value"><?php echo esc_html(get_post_meta($profile_id,'corr_state',true)); ?></span>
+                                        </div>
+
+                                        <div class="info-item">
+                                            <span class="info-label">Pincode</span>
+                                            <span class="info-value"><?php echo esc_html(get_post_meta($profile_id,'corr_pincode',true)); ?></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+
+                            <!-- ===============================
+                                WORK INFO
+                            =============================== -->
+                            <div class="info-card">
+                                <h3>Work Information</h3>
+
+                                <div class="info-grid">
+
+                                    <div class="info-item">
+                                        <span class="info-label">Company Name</span>
+                                        <span class="info-value"><?php echo esc_html(get_post_meta($profile_id,'company_name',true)); ?></span>
+                                    </div>
+
+                                    <div class="info-item">
+                                        <span class="info-label">Designation</span>
+                                        <span class="info-value"><?php echo esc_html(get_post_meta($profile_id,'designation',true)); ?></span>
+                                    </div>
+
+                                    <div class="info-item">
+                                        <span class="info-label">Company Email</span>
+                                        <span class="info-value"><?php echo esc_html(get_post_meta($profile_id,'company_email',true)); ?></span>
+                                    </div>
+
+                                    <div class="info-item">
+                                        <span class="info-label">Company Phone</span>
+                                        <span class="info-value"><?php echo esc_html(get_post_meta($profile_id,'company_phone',true)); ?></span>
+                                    </div>
+
+                                    <div class="info-item">
+                                        <span class="info-label">Company Address</span>
+                                        <span class="info-value"><?php echo esc_html(get_post_meta($profile_id,'company_address',true)); ?></span>
+                                    </div>
+                                </div>
+                            </div>
+
+
+                            <!-- ===============================
+                                DOCUMENTS
+                            =============================== -->
+                            <div class="info-card">
+                                <h3>Documents</h3>
+
+                                <div class="doc-grid">
+
+                                    <?php
+                                    $docs = [
+                                        'profile_image'   => 'Profile Image',
+                                        'cover_image'     => 'Cover Image',
+                                        'aadhaar_card'    => 'Aadhaar Card',
+                                        'driving_license' => 'Driving License',
+                                        'company_id_card' => 'Company ID Card'
+                                    ];
+
+                                    foreach ($docs as $key => $label):
+                                        $id  = get_post_meta($profile_id,$key,true);
+                                        $url = $id ? wp_get_attachment_url($id) : '';
+                                    ?>
+
+                                        <div class="doc-card">
+                                            <span class="doc-title"><?php echo $label; ?></span>
+
+                                            <?php if ($url): ?>
+                                                <a href="<?php echo esc_url($url); ?>" target="_blank">
+                                                    <img src="<?php echo esc_url($url); ?>" class="doc-img">
+                                                </a>
+                                            <?php else: ?>
+                                                <div class="doc-empty-box">No File</div>
+                                            <?php endif; ?>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- CONNECTIONS -->
@@ -1554,80 +1721,6 @@ class NEXORA_Page {
     }
 
     /* ===============================
-       Profile Data UPDATE
-    =============================== */
-    public function profile_update() {
-
-        check_ajax_referer('profile_nonce','nonce');
-
-        if (!is_user_logged_in()) {
-            wp_send_json_error('Not logged in');
-        }
-
-        $id = intval($_POST['id']);
-
-        $user_id = get_current_user_id();
-        $profile_id = get_user_meta($user_id, '_profile_id', true);
-
-        if ($profile_id != $id) {
-            wp_send_json_error('Unauthorized');
-        }
-
-        // TEXT FIELDS
-        $fields = [
-            'first_name',
-            'last_name',
-            'phone',
-            'gender',
-            'birthdate',
-            'linkedin_id',
-            'bio',
-
-            // Address
-            'perm_address',
-            'perm_city',
-            'perm_state',
-            'perm_pincode',
-
-            'corr_address',
-            'corr_city',
-            'corr_state',
-            'corr_pincode',
-
-            // Work
-            'company_name',
-            'designation',
-            'company_email',
-            'company_phone',
-            'company_address'
-        ];
-
-        // Save text fields
-        foreach ($fields as $field) {
-            if (isset($_POST[$field])) {
-                update_post_meta($id, $field, sanitize_text_field($_POST[$field]));
-            }
-        }
-
-        // Save images
-        $image_fields = [
-            'profile_image',
-            'cover_image',
-            'aadhaar_card',
-            'driving_license',
-            'company_id_card'
-        ];
-
-        foreach ($image_fields as $field) {
-            if (isset($_POST[$field])) {
-                update_post_meta($id, $field, intval($_POST[$field]));
-            }
-        }
-
-        wp_send_json_success('Saved successfully');
-    }
-
-    /* ===============================
        Image Filter
     =============================== */
     function image_filter($query) {
@@ -1644,7 +1737,7 @@ class NEXORA_Page {
         $role = get_role('subscriber'); // or your custom role
 
         if ($role) {
-            $role->add_cap('upload_files'); // 🔥 THIS FIXES IT
+            $role->add_cap('upload_files'); // THIS FIXES IT
         }
     }
 }
