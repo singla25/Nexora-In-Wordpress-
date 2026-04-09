@@ -5,7 +5,8 @@ jQuery(document).ready(function ($) {
     // ===============================
     let savedTab = localStorage.getItem('activeTab');
 
-    if (savedTab) {
+    // ✅ Only owner should restore tab
+    if (savedTab && profilePageData.roleType === 'owner') {
 
         $('.tab-btn').removeClass('active');
         $('.tab-btn[data-tab="' + savedTab + '"]').addClass('active');
@@ -644,6 +645,11 @@ jQuery(document).ready(function ($) {
         $('#connection-established').show();
     });
 
+    $(document).on('click', '#conn-heading', function () {
+        $('#connection-chat').hide();
+        $('#connection-established').show();
+    });
+
 
     // ===============================
     // NOTIFICATION TAB
@@ -885,14 +891,42 @@ jQuery(document).ready(function ($) {
         let title = $(this).data('title');
         let content = $(this).data('content');
         let image = $(this).data('image');
+        let date = $(this).data('date');
 
         Swal.fire({
-            title: title,
             html: `
-                <img src="${image}" style="width:100%; margin-bottom:10px; border-radius:10px;">
-                <p">${content}</p>
+                <div class="modern-post">
+
+                    <img src="${image}" class="modern-post-img">
+
+                    <div class="modern-post-body">
+
+                        <!-- TITLE -->
+                        <h2 class="modern-post-title">${title}</h2>
+
+                        <!-- DESCRIPTION -->
+                        <p class="modern-post-desc">${content}</p>
+
+                        <!-- FOOTER -->
+                        <div class="modern-post-meta">
+
+                            <span></span>
+
+                            <span class="meta-date">
+                                Posted on: ${date}
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                </div>
             `,
-            width: '600px'
+            width: '550px',
+            showConfirmButton: false,
+            customClass: {
+                popup: 'modern-popup'
+            }
         });
     });
 });

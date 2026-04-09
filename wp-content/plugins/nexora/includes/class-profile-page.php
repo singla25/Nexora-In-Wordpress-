@@ -69,10 +69,42 @@ class NEXORA_Page {
             $phone = get_post_meta($profile_id,'phone',true);
         }
 
+        $current_user_id = get_current_user_id();
+        $username = get_query_var('username');
+
+        $owner_user_id = 0;
+
+        if ($username) {
+            $query = new WP_Query([
+                'post_type' => 'user_profile',
+                'posts_per_page' => 1,
+                'meta_query' => [
+                    [
+                        'key' => 'user_name',
+                        'value' => $username,
+                        'compare' => '='
+                    ]
+                ]
+            ]);
+
+            if ($query->have_posts()) {
+                $query->the_post();
+                $profile_id = get_the_ID();
+                $owner_user_id = get_post_meta($profile_id, '_wp_user_id', true);
+                wp_reset_postdata();
+            }
+        } else {
+            $owner_user_id = $current_user_id;
+        }
+
+        // 🔥 ROLE
+        $role_type = $this->get_user_role_type($current_user_id, $owner_user_id);
+
         wp_localize_script('profile-page-js', 'profilePageData', [
             'ajaxUrl' => admin_url('admin-ajax.php'),
             'nonce'   => wp_create_nonce('profile_nonce'),
             'homeUrl' => home_url(),
+            'roleType' => $role_type,
 
             // USER INFORMATION BLOCK
             'userData' => [
@@ -543,6 +575,7 @@ class NEXORA_Page {
                 <th>Username</th>
                 <th>Name</th>
                 <th>Status</th>
+                <th>Date & Time</th>
             </tr>
 
             <?php if ($received): foreach ($received as $conn):
@@ -552,6 +585,8 @@ class NEXORA_Page {
                 $first_name = get_post_meta($sender_id,'first_name',true);
                 $last_name = get_post_meta($sender_id,'last_name',true);
                 $link = site_url('/profile-page/' . $username);
+                $date = get_the_date('d M Y', $sender_id);
+                $time = get_the_time('h:i A', $sender_id);
             ?>
 
             <tr>
@@ -562,10 +597,13 @@ class NEXORA_Page {
                 </td>
                 <td><?php echo esc_html($first_name . ' ' . $last_name); ?></td>
                 <td><?php echo esc_html($status); ?></td>
+                <td>
+                    <?php echo esc_html($date . ' | ' . $time); ?>
+                </td>
             </tr>
 
             <?php endforeach; else: ?>
-                <tr><td colspan="3">No received requests</td></tr>
+                <tr><td colspan="4">No received requests</td></tr>
             <?php endif; ?>
         </table>
 
@@ -577,6 +615,7 @@ class NEXORA_Page {
                 <th>Username</th>
                 <th>Name</th>
                 <th>Status</th>
+                <th>Date & Time</th>
             </tr>
 
             <?php if ($sent): foreach ($sent as $conn):
@@ -587,6 +626,8 @@ class NEXORA_Page {
                 $first_name = get_post_meta($receiver_id,'first_name',true);
                 $last_name = get_post_meta($receiver_id,'last_name',true);
                 $link = site_url('/profile-page/' . $username);
+                $date = get_the_date('d M Y', $sender_id);
+                $time = get_the_time('h:i A', $sender_id);
 
             ?>
 
@@ -598,6 +639,9 @@ class NEXORA_Page {
                 </td>
                 <td><?php echo esc_html($first_name . ' ' . $last_name); ?></td>
                 <td><?php echo esc_html($status); ?></td>
+                <td>
+                    <?php echo esc_html($date . ' | ' . $time); ?>
+                </td>
             </tr>
 
             <?php endforeach; else: ?>
@@ -906,9 +950,9 @@ class NEXORA_Page {
         <table style="width:100%; border-collapse:collapse;">
             <thead>
                 <tr>
-                    <th style="text-align:left; padding:8px;">Title</th>
-                    <th style="text-align:left; padding:8px;">Date</th>
-                    <th style="text-align:left; padding:8px;">Action</th>
+                    <th style="padding:8px;">Title</th>
+                    <th style="padding:8px;">Date</th>
+                    <th style="padding:8px;">Action</th>
                 </tr>
             </thead>
             <tbody>
@@ -931,6 +975,7 @@ class NEXORA_Page {
                             data-title="<?php echo esc_attr($title); ?>"
                             data-content="<?php echo esc_attr($content); ?>"
                             data-image="<?php echo esc_url($image); ?>"
+                            data-date="<?php echo esc_attr($date); ?>"
                         >
                             View
                         </button>
@@ -959,6 +1004,19 @@ class NEXORA_Page {
     /* ===============================
        RENDER PROFILE
     =============================== */
+    private function get_user_role_type($current_user_id, $owner_user_id) {
+
+        if (!is_user_logged_in()) {
+            return 'guest';
+        }
+
+        if ($current_user_id == $owner_user_id) {
+            return 'owner';
+        }
+
+        return 'viewer'; // logged in but not owner
+    }
+    
     public function render_profile() {
 
         // Only run on profile page
@@ -1068,11 +1126,11 @@ class NEXORA_Page {
             $owner_user_id = get_post_meta($profile_id, '_wp_user_id', true);
         }
 
-        // OWNER CHECK
-        $is_owner = ($current_user_id == $owner_user_id);
+        // Role of User
+        $role_type = $this->get_user_role_type($current_user_id, $owner_user_id);
 
-        // LoggedIn CHECK
-        $is_logged_in = is_user_logged_in();
+        $is_owner = ($role_type === 'owner');
+        $is_logged_in = ($role_type !== 'guest');
 
         $name     = get_the_title($profile_id);
         $username = get_post_meta($profile_id, 'user_name', true);
@@ -1368,7 +1426,7 @@ class NEXORA_Page {
                             <?php elseif ($is_owner): ?>
                                 <!-- CASE 2: OWNER -->
                                 <div class="conn-left">
-                                    <h3>Connections</h3>
+                                    <h3 id="conn-heading">Connections</h3>
                                     <span class="conn-sub">Manage your network</span>
                                 </div>
 
