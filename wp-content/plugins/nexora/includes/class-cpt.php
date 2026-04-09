@@ -40,17 +40,17 @@ class NEXORA_CPT {
     public function register_main_menu() {
 
         add_menu_page(
-            'Profile System',
-            'Profile System',
+            'Nexora System',
+            'Nexora System',
             'manage_options',
-            'profile-system',
+            'nexora-system',
             [$this, 'settings_page'],
             'dashicons-groups',
             5
         );
 
         add_submenu_page(
-            'profile-system',
+            'nexora-system',
             'Notifications',
             'Notifications',
             'manage_options',
@@ -59,11 +59,11 @@ class NEXORA_CPT {
         );
 
         add_submenu_page(
-            'profile-system',
+            'nexora-system',
             'Settings',
             'Settings',
             'manage_options',
-            'profile-system',
+            'nexora-system',
             [$this, 'settings_page']
         );
     }
@@ -75,7 +75,7 @@ class NEXORA_CPT {
             'public' => true,
             'show_ui' => true,
             'supports' => ['title', 'thumbnail'],
-            'show_in_menu' => 'profile-system',
+            'show_in_menu' => 'nexora-system',
             'menu_icon' => 'dashicons-groups',
         ]);
 
@@ -84,7 +84,7 @@ class NEXORA_CPT {
             'public' => false,
             'show_ui' => true,
             'supports' => ['title'],
-            'show_in_menu' => 'profile-system',
+            'show_in_menu' => 'nexora-system',
             'menu_icon' => 'dashicons-groups',
         ]);
 
@@ -93,7 +93,7 @@ class NEXORA_CPT {
             'public' => false,
             'show_ui' => true,
             'supports' => ['title', 'editor', 'thumbnail'],
-            'show_in_menu' => 'profile-system',
+            'show_in_menu' => 'nexora-system',
             'menu_icon' => 'dashicons-groups',
         ]);
     }
@@ -115,8 +115,9 @@ class NEXORA_CPT {
     public function register_settings() {
         register_setting('profile_settings_group', 'default_profile_image');
         register_setting('profile_settings_group', 'default_cover_image');
-        register_setting('profile_settings_group', 'default_admin_mail');
+        register_setting('profile_settings_group', 'default_document_image');
         register_setting('profile_settings_group', 'default_home_cover_image');
+        register_setting('profile_settings_group', 'default_admin_mail');
     }
 
     public function settings_page() {
@@ -149,6 +150,19 @@ class NEXORA_CPT {
                                 style="max-width:150px; display:block; margin-bottom:10px;">
 
                             <input type="hidden" name="default_cover_image" value="<?php echo esc_attr($cover_id); ?>">
+                            <button type="button" class="button upload-btn">Upload</button>
+                            <button type="button" class="button remove-btn">Remove</button>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th>Default Document Image</th>
+                        <td>
+                            <?php $document_id = get_option('default_document_image'); ?>
+                            <img src="<?php echo $document_id ? wp_get_attachment_url($document_id) : ''; ?>" 
+                                style="max-width:150px; display:block; margin-bottom:10px;">
+
+                            <input type="hidden" name="default_document_image" value="<?php echo esc_attr($document_id); ?>">
                             <button type="button" class="button upload-btn">Upload</button>
                             <button type="button" class="button remove-btn">Remove</button>
                         </td>

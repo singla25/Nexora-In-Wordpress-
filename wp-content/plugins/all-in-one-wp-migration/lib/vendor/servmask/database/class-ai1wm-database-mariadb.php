@@ -48,31 +48,31 @@ class Ai1wm_Database_Mariadb extends Ai1wm_Database_Mysqli {
 
 			// Convert INET4 column type (10.10.0)
 			if ( version_compare( $this->server_version(), '10.10.0', '<' ) ) {
-				$search[]  = '/\bINET4\b(?!\s*\()/i';
+				$search[]  = '/(?<!`)\bINET4\b(?!\s*\()/i';
 				$replace[] = 'VARCHAR(15)';
 			}
 
 			// Convert INET6 column type (10.5.0)
 			if ( version_compare( $this->server_version(), '10.5.0', '<' ) ) {
-				$search[]  = '/\bINET6\b(?!\s*\()/i';
+				$search[]  = '/(?<!`)\bINET6\b(?!\s*\()/i';
 				$replace[] = 'VARCHAR(45)';
 			}
 
 			// Convert UUID column type (10.7.0)
 			if ( version_compare( $this->server_version(), '10.7.0', '<' ) ) {
-				$search[]  = '/\bUUID\b(?!\s*\()/i';
+				$search[]  = '/(?<!`)\bUUID\b(?!\s*\()/i';
 				$replace[] = 'CHAR(36)';
 			}
 
 			// Convert XMLTYPE column type (12.3.0)
 			if ( version_compare( $this->server_version(), '12.3.0', '<' ) ) {
-				$search[]  = '/\bXMLTYPE\b(?!\s*\()/i';
+				$search[]  = '/(?<!`)\bXMLTYPE\b(?!\s*\()/i';
 				$replace[] = 'LONGTEXT';
 			}
 
 			// Convert VECTOR(N) column type (11.7.1)
 			if ( version_compare( $this->server_version(), '11.7.1', '<' ) ) {
-				$search[]  = '/\bVECTOR\s*\(\s*\d+\s*\)/i';
+				$search[]  = '/(?<!`)\bVECTOR\s*\(\s*\d+\s*\)/i';
 				$replace[] = 'BLOB';
 			}
 		}

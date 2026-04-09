@@ -349,7 +349,7 @@ class NEXORA_Page {
                 'profile_id' => $user->ID,
                 'username' => get_post_meta($user->ID, 'user_name', true),
                 'name' => get_post_meta($user->ID, 'first_name', true) . ' ' . get_post_meta($user->ID, 'last_name', true),
-                'image' => wp_get_attachment_url(get_post_meta($user->ID, 'profile_image', true))
+                'image' => $this->get_profile_image($user->ID)
             ];
         }
 
@@ -440,7 +440,7 @@ class NEXORA_Page {
                 'profile_id' => $sender,
                 'username' => get_post_meta($sender, 'user_name', true),
                 'name' => get_post_meta($sender, 'first_name', true) . ' ' . get_post_meta($sender, 'last_name', true),
-                'image' => wp_get_attachment_url(get_post_meta($sender, 'profile_image', true))
+                'image' => $this->get_profile_image($sender)
             ];
         }
 
@@ -645,7 +645,7 @@ class NEXORA_Page {
                     'profile_id' => $other_id,
                     'username' => get_post_meta($other_id, 'user_name', true),
                     'name' => get_post_meta($other_id, 'first_name', true) . ' ' . get_post_meta($other_id, 'last_name', true),
-                    'image' => wp_get_attachment_url(get_post_meta($other_id, 'profile_image', true)),
+                    'image' => $this->get_profile_image($other_id),
                     'profile_link' => site_url('/profile-page/' . get_post_meta($other_id, 'user_name', true))
                 ];
             }
@@ -712,7 +712,7 @@ class NEXORA_Page {
                 'profile_id' => $id,
                 'username' => get_post_meta($id, 'user_name', true),
                 'name' => get_post_meta($id, 'first_name', true) . ' ' . get_post_meta($id, 'last_name', true),
-                'image' => wp_get_attachment_url(get_post_meta($id, 'profile_image', true)),
+                'image' => $this->get_profile_image($id),
                 'profile_link' => site_url('/profile-page/' . get_post_meta($id, 'user_name', true))
             ];
         }
@@ -727,7 +727,7 @@ class NEXORA_Page {
                     <div class="conn-cover"></div>
 
                     <div class="conn-avatar">
-                        <img src="<?php echo esc_url($user['image']); ?>">
+                        <img src="<?php echo $user['image']; ?>">
                     </div>
 
                     <div class="conn-body">
@@ -1084,9 +1084,11 @@ class NEXORA_Page {
         
         $default_profile_id = get_option('default_profile_image');
         $default_cover_id   = get_option('default_cover_image');
+        $default_doc_id     = get_option('default_document_image');
 
         $default_profile = $default_profile_id ? wp_get_attachment_url($default_profile_id) : '';
         $default_cover   = $default_cover_id ? wp_get_attachment_url($default_cover_id) : '';
+        $default_doc     = $default_doc_id ? wp_get_attachment_url($default_doc_id) : '';
 
         $profile_image = $profile_image_id ? wp_get_attachment_url($profile_image_id) : $default_profile;
         $cover_image = $cover_image_id ? wp_get_attachment_url($cover_image_id) : $default_cover;
@@ -1127,10 +1129,10 @@ class NEXORA_Page {
                     <?php endif; ?>
                 </div>
 
-                <!-- CONTENT -->
+                <!-- MAIN CONTENT -->
                 <div class="profile-content">
                     
-                    <!-- User Information -->
+                    <!-- USER INFORMATION -->
                     <div class="tab-content active" id="user-info">
                         <div class="user-info-header">
                             <?php if ($is_owner): ?>
@@ -1157,9 +1159,7 @@ class NEXORA_Page {
                         </div>
 
                         <div id="user-info-content">
-                            <!-- ===============================
-                                PERSONAL INFO
-                            =============================== -->
+                            <!-- PERSONAL INFO -->
                             <div class="info-card">
                                 <h3>Personal Information</h3>
 
@@ -1213,10 +1213,7 @@ class NEXORA_Page {
                                 </div>
                             </div>
 
-
-                            <!-- ===============================
-                                ADDRESS INFO
-                            =============================== -->
+                            <!-- ADDRESS INFO -->
                             <div class="info-card">
                                 <h3>Address Information</h3>
 
@@ -1275,10 +1272,7 @@ class NEXORA_Page {
                                 </div>
                             </div>
 
-
-                            <!-- ===============================
-                                WORK INFO
-                            =============================== -->
+                            <!-- WORK INFO -->
                             <div class="info-card">
                                 <h3>Work Information</h3>
 
@@ -1311,10 +1305,7 @@ class NEXORA_Page {
                                 </div>
                             </div>
 
-
-                            <!-- ===============================
-                                DOCUMENTS
-                            =============================== -->
+                            <!-- DOCUMENTS -->
                             <div class="info-card">
                                 <h3>Documents</h3>
 
@@ -1330,8 +1321,20 @@ class NEXORA_Page {
                                     ];
 
                                     foreach ($docs as $key => $label):
+
                                         $id  = get_post_meta($profile_id,$key,true);
                                         $url = $id ? wp_get_attachment_url($id) : '';
+
+                                        // ✅ Fallback logic
+                                        if (!$url) {
+                                            if ($key === 'profile_image') {
+                                                $url = $default_profile;
+                                            } elseif ($key === 'cover_image') {
+                                                $url = $default_cover;
+                                            } else {
+                                                $url = $default_doc;
+                                            }
+                                        }
                                     ?>
 
                                         <div class="doc-card">
@@ -1373,6 +1376,7 @@ class NEXORA_Page {
                                     <button class="conn-tab" data-type="add">Add New</button>
                                     <button class="conn-tab" data-type="requests">Requests</button>
                                     <button class="conn-tab" data-type="history">History</button>
+                                    <button class="conn-tab" data-type="chat">Chat</button>
                                 </div>
 
                             <?php else: ?>
@@ -1394,6 +1398,7 @@ class NEXORA_Page {
                             <?php endif; ?>
                         </div>
 
+                        <!-- CONNECTION ESTABLISHED -->
                         <div id="connection-established">
                             <?php
 
@@ -1425,7 +1430,7 @@ class NEXORA_Page {
                                         'profile_id' => $other_id,
                                         'username' => get_post_meta($other_id, 'user_name', true),
                                         'name' => get_post_meta($other_id, 'first_name', true) . ' ' . get_post_meta($other_id, 'last_name', true),
-                                        'image' => wp_get_attachment_url(get_post_meta($other_id, 'profile_image', true)),
+                                        'image' => $this->get_profile_image($other_id),
                                         'profile_link' => site_url('/profile-page/' . get_post_meta($other_id, 'user_name', true))
                                     ];
                                 }
@@ -1443,7 +1448,7 @@ class NEXORA_Page {
 
                                                 <!-- AVATAR -->
                                                 <div class="conn-avatar">
-                                                    <img src="<?php echo esc_url($user['image']); ?>" alt="">
+                                                    <img src="<?php echo $user['image']; ?>" alt="">
                                                 </div>
 
                                                 <!-- INFO -->
@@ -1516,6 +1521,11 @@ class NEXORA_Page {
                                     </div>
                                 </div>
                             <?php endif; ?>
+                        </div>
+
+                        <!-- CHAT -->
+                        <div id="connection-chat" style="display:none;">
+                            <?php echo do_shortcode('[better_messages]'); ?>
                         </div>
                     </div>
 
@@ -1692,12 +1702,32 @@ class NEXORA_Page {
 
                             </div>
 
-                            <?php endforeach; else: ?>
-                                <p>No content found</p>
+                            <?php endforeach; ?>
+
+                            <?php if (!$has_other_posts): ?>
+
+                                <!-- EMPTY STATE -->
+                                <div class="empty-content">
+                                    <div class="empty-icon">📭</div>
+                                    <h3>No Content Yet</h3>
+                                    <p>No one else has posted anything yet.</p>
+                                </div>
+
+                            <?php endif; ?>
+
+                            <?php else: ?>
+
+                                <!-- OPTIONAL: if literally no posts exist at all -->
+                                <div class="empty-content">
+                                    <h3>No Content Available</h3>
+                                </div>
+
                             <?php endif; ?>
 
                         </div>
                     </div>
+
+                    
                 </div>
             </div>
 
@@ -1714,6 +1744,19 @@ class NEXORA_Page {
 
         <?php
         return ob_get_clean();
+    }
+
+    private function get_profile_image($profile_id) {
+
+        $image_id = get_post_meta($profile_id, 'profile_image', true);
+
+        // default from options
+        $default_id = get_option('default_profile_image');
+        $default_url = $default_id ? wp_get_attachment_url($default_id) : '';
+
+        return $image_id 
+            ? wp_get_attachment_url($image_id) 
+            : $default_url;
     }
 
     /* ===============================

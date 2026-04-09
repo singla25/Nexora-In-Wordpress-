@@ -17,6 +17,7 @@ require_once NEXORA_PATH . 'includes/class-profile-page.php';
 require_once NEXORA_PATH . 'includes/class-login.php';
 require_once NEXORA_PATH . 'includes/class-home-page.php';
 require_once NEXORA_PATH . 'includes/class-notification.php';
+require_once NEXORA_PATH . 'includes/class-chat.php';
 
 class NEXORA_System {
 
@@ -27,6 +28,7 @@ class NEXORA_System {
         new NEXORA_CPT();
         new NEXORA_Page();
         new Nexora_Home_Page();
+        new Nexora_CHAT_Page();
 
         add_action('wp_enqueue_scripts', [$this, 'enqueue_assets']);
 

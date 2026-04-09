@@ -4,7 +4,7 @@ Tags: backup, clone, migrate, move-wordpress, export-import
 Requires at least: 3.3
 Tested up to: 7.0
 Requires PHP: 5.3
-Stable tag: 7.104
+Stable tag: 7.105
 License: GPLv3 or later
 
 Trusted by 60M+ sites: The gold standard for WordPress migration and backup. Migrate, backup, and restore your WordPress site with one click.
@@ -164,6 +164,12 @@ All-in-One WP Migration is in full compliance with General Data Protection Regul
 See our [GDPR Compliant Privacy Policy here](https://www.iubenda.com/privacy-policy/946881).
 
 == Changelog ==
+= 7.105 =
+**Fixed**
+
+* PHP 8.5 "Cannot use bool as array" fatal error in export pipeline when reading past end-of-file
+* Database column name replacement incorrectly matching column type keywords (e.g., UUID) in database tables
+
 = 7.104 =
 **Added**
 

@@ -827,6 +827,64 @@ body {
     opacity: 1;
 }
 
+.empty-content {
+    grid-column: 1 / -1; /* 💥 THIS IS THE MAIN FIX */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 80px 20px;
+    border: 2px dashed #e5e7eb;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #f9fafb, #f3f4f6);
+    min-width: 450px;
+    max-width: 500px;
+    margin: 40px auto;
+}
+
+/* subtle hover (optional premium feel) */
+.empty-content:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+}
+
+/* icon */
+.empty-icon {
+    font-size: 48px;
+    margin-bottom: 12px;
+}
+
+/* heading */
+.empty-content h3 {
+    font-size: 20px;
+    color: #111827;
+    margin-bottom: 6px;
+}
+
+/* description */
+.empty-content p {
+    font-size: 14px;
+    color: #6b7280;
+    line-height: 1.6;
+}
+
+.chat-popup {
+    padding: 0 !important;
+    border-radius: 12px;
+}
+
+.chat-popup-wrapper {
+    height: 500px;
+    overflow: hidden;
+}
+
+/* remove default swal padding */
+.swal2-html-container {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
 
 /* ======================
    Notification

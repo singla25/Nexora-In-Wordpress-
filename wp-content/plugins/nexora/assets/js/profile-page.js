@@ -3,9 +3,23 @@ jQuery(document).ready(function ($) {
     // ===============================
     // TAB SWITCH
     // ===============================
+    let savedTab = localStorage.getItem('activeTab');
+
+    if (savedTab) {
+
+        $('.tab-btn').removeClass('active');
+        $('.tab-btn[data-tab="' + savedTab + '"]').addClass('active');
+
+        $('.tab-content').removeClass('active');
+        $('#' + savedTab).addClass('active');
+    }
+
     $('.tab-btn').on('click', function () {
 
         let tab = $(this).data('tab');
+
+        // SAVE ACTIVE TAB
+        localStorage.setItem('activeTab', tab);
 
         $('.tab-btn').removeClass('active');
         $(this).addClass('active');
@@ -378,7 +392,7 @@ jQuery(document).ready(function ($) {
                             <div class="conn-cover"></div>
 
                             <div class="conn-avatar">
-                                <img src="${user.image}">
+                                <img src="${user.image ? user.image : profilePageData.userData.profile_image}">
                             </div>
 
                             <div class="conn-body">
@@ -450,7 +464,7 @@ jQuery(document).ready(function ($) {
                             <div class="conn-cover"></div>
 
                             <div class="conn-avatar">
-                                <img src="${user.image}">
+                                <img src="${user.image ? user.image : profilePageData.userData.profile_image}">
                             </div>
 
                             <div class="conn-body">
@@ -505,6 +519,7 @@ jQuery(document).ready(function ($) {
                 timer: 2000,
                 showConfirmButton: false
             }).then(() => {
+                localStorage.setItem('activeTab', 'connections');
                 location.reload();
             });
         });
@@ -618,6 +633,17 @@ jQuery(document).ready(function ($) {
         });
     });
 
+    // Chat
+    $(document).on('click', '.conn-tab[data-type="chat"]', function () {
+        $('#connection-established').hide();   // existing section hide
+        $('#connection-chat').show();          // chat show
+    });
+
+    $(document).on('click', '.conn-tab:not([data-type="chat"])', function () {
+        $('#connection-chat').hide();
+        $('#connection-established').show();
+    });
+
 
     // ===============================
     // NOTIFICATION TAB
@@ -639,6 +665,7 @@ jQuery(document).ready(function ($) {
             text: message,
             icon: 'info'
         }).then(() => {
+            localStorage.setItem('activeTab', 'notifications');
             location.reload(); // reload after OK
         });
 
@@ -823,6 +850,7 @@ jQuery(document).ready(function ($) {
                         timer: 1500,
                         showConfirmButton: false
                     }).then(() => {
+                        localStorage.setItem('activeTab', 'content');
                         location.reload(); // refresh feed
                     });
 

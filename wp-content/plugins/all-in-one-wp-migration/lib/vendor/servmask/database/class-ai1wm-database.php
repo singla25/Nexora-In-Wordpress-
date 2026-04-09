@@ -1907,11 +1907,11 @@ abstract class Ai1wm_Database {
 	 */
 	protected function replace_column_types( $input ) {
 		$search  = array(
-			'/\bINET4\b(?!\s*\()/i',
-			'/\bINET6\b(?!\s*\()/i',
-			'/\bUUID\b(?!\s*\()/i',
-			'/\bXMLTYPE\b(?!\s*\()/i',
-			'/\bVECTOR\s*\(\s*\d+\s*\)/i',
+			'/(?<!`)\bINET4\b(?!\s*\()/i',
+			'/(?<!`)\bINET6\b(?!\s*\()/i',
+			'/(?<!`)\bUUID\b(?!\s*\()/i',
+			'/(?<!`)\bXMLTYPE\b(?!\s*\()/i',
+			'/(?<!`)\bVECTOR\s*\(\s*\d+\s*\)/i',
 		);
 		$replace = array(
 			'VARCHAR(15)',

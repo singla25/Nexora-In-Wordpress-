@@ -1,0 +1,116 @@
+<?php
+defined( 'ABSPATH' ) || exit;
+
+add_action( 'better_messages_activation', 'bp_install_email_templates' );
+
+if ( ! function_exists( 'bp_bm_get_post_by_title' ) ) {
+    /**
+     * Replacement for deprecated core get_page_by_title().
+     *
+     * @param string       $post_title Exact post title to match.
+     * @param string       $output     OBJECT, ARRAY_A or ARRAY_N.
+     * @param string|array $post_type  Post type or array of post types.
+     *
+     * @return WP_Post|array|null
+     */
+    function bp_bm_get_post_by_title( $post_title, $output = OBJECT, $post_type = 'page' ) {
+        $query = new WP_Query( array(
+            'post_type'              => $post_type,
+            'post_status'            => 'any',
+            'title'                  => $post_title,
+            'posts_per_page'         => 1,
+            'no_found_rows'          => true,
+            'ignore_sticky_posts'    => true,
+            'update_post_meta_cache' => false,
+            'update_post_term_cache' => false,
+            'fields'                 => 'ids',
+            'orderby'                => 'ID',
+            'order'                  => 'ASC',
+            'suppress_filters'       => true,
+        ) );
+
+        if ( empty( $query->posts ) ) {
+            return null;
+        }
+
+        return get_post( $query->posts[0], $output );
+    }
+}
+
+function bp_install_email_templates()
+{
+    if ( ! function_exists( 'bp_get_email_post_type' ) ) return;
+
+    $defaults = array(
+        'post_status' => 'publish',
+        'post_type'   => bp_get_email_post_type(),
+    );
+
+    $emails = array(
+        'messages-unread-group' => array(
+            /* translators: do not remove {} brackets or translate its contents. */
+            'post_title'   => __( '[{{{site.name}}}] You have unread messages: {{subject}}', 'bp-better-messages' ),
+            /* translators: do not remove {} brackets or translate its contents. */
+            'post_content' => __( "You have unread messages: &quot;{{subject}}&quot;\n\n{{{messages.html}}}\n\n<a href=\"{{{thread.url}}}\">Go to the discussion</a> to reply or catch up on the conversation.", 'bp-better-messages' ),
+            /* translators: do not remove {} brackets or translate its contents. */
+            'post_excerpt' => __( "You have unread messages: \"{{subject}}\"\n\n{{messages.raw}}\n\nGo to the discussion to reply or catch up on the conversation: {{{thread.url}}}", 'bp-better-messages' ),
+        )
+    );
+
+    $descriptions[ 'messages-unread-group' ] = __( 'A member has unread private messages.', 'bp-better-messages' );
+
+    // Add these emails to the database.
+    foreach ( $emails as $id => $email ) {
+        $post_args = bp_parse_args( $email, $defaults, 'install_email_' . $id );
+
+        $template = bp_bm_get_post_by_title( $post_args[ 'post_title' ], OBJECT, bp_get_email_post_type() );
+        if ( $template ) $post_args[ 'ID' ] = $template->ID;
+
+        $post_id = wp_insert_post( $post_args );
+
+        if ( !$post_id ) {
+            continue;
+        }
+
+        $tt_ids = wp_set_object_terms( $post_id, $id, bp_get_email_tax_type() );
+        foreach ( $tt_ids as $tt_id ) {
+            $term = get_term_by( 'term_taxonomy_id', (int)$tt_id, bp_get_email_tax_type() );
+            wp_update_term( (int)$term->term_id, bp_get_email_tax_type(), array(
+                'description' => $descriptions[ $id ],
+            ) );
+        }
+    }
+}
+
+add_action( 'better_messages_activation', 'bm_install_tables' );
+function bm_install_tables(){
+    require_once("api/db-migrate.php");
+
+    Better_Messages_Rest_Api_DB_Migrate::instance()->install_tables();
+    Better_Messages_Rest_Api_DB_Migrate::instance()->migrations();
+}
+
+add_action( 'better_messages_deactivation', 'better_messages_unschedule_cron' );
+
+function better_messages_unschedule_cron()
+{
+	wp_unschedule_event( wp_next_scheduled( 'better_messages_send_notifications' ), 'better_messages_send_notifications' );
+}
+
+
+function better_messages_activation()
+{
+    require_once trailingslashit( dirname(__FILE__) ) . 'api/db-migrate.php';
+    require_once trailingslashit( dirname(__FILE__) ) . 'users.php';
+    require_once trailingslashit( dirname(__FILE__) ) . 'capabilities.php';
+
+    Better_Messages_Rest_Api_DB_Migrate()->install_tables();
+    Better_Messages_Rest_Api_DB_Migrate()->migrations();
+
+    do_action( 'better_messages_activation' );
+}
+
+function better_messages_deactivation()
+{
+    do_action( 'better_messages_deactivation' );
+}

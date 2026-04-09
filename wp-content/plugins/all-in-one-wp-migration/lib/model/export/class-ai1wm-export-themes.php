@@ -127,7 +127,8 @@ class Ai1wm_Export_Themes {
 			$archive->set_file_pointer( $archive_bytes_offset );
 
 			// Loop over files
-			while ( list( $file_abspath, $file_relpath, $file_size, $file_mtime ) = ai1wm_getcsv( $themes_list ) ) {
+			while ( ( $row = ai1wm_getcsv( $themes_list ) ) !== false ) {
+				list( $file_abspath, $file_relpath, $file_size, $file_mtime ) = $row;
 				$file_bytes_read = 0;
 
 				// Add file to archive

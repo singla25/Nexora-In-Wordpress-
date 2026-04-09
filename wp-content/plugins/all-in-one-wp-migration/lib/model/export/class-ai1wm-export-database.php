@@ -85,8 +85,9 @@ class Ai1wm_Export_Database {
 
 		// Loop over tables
 		$tables = array();
-		while ( list( $table_name ) = ai1wm_getcsv( $tables_list ) ) {
-			$tables[] = $table_name;
+		while ( ( $row = ai1wm_getcsv( $tables_list ) ) !== false ) {
+			list( $table_name ) = $row;
+			$tables[] = $table_name; // phpcs:ignore Generic.Formatting.MultipleStatementAlignment.NotSameWarning
 		}
 
 		// Close the tables list file
