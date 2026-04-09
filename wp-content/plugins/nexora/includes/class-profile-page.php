@@ -1056,30 +1056,70 @@ class NEXORA_PROFILE_PAGE {
             ';
         }
 
-        if (is_user_logged_in() && current_user_can('manage_options') && !$username) {
+        if (is_user_logged_in() && current_user_can('manage_options')) {
 
             $current_user = wp_get_current_user();
 
             return '
                 <div style="
-                    max-width:500px;
-                    margin:100px auto;
+                    max-width:520px;
+                    margin:120px auto;
                     text-align:center;
-                    padding:40px;
-                    background:#fff;
-                    border-radius:12px;
-                    box-shadow:0 10px 30px rgba(0,0,0,0.1);
+                    padding:50px 40px;
+                    background:#ffffff;
+                    border-radius:16px;
+                    box-shadow:0 20px 50px rgba(0,0,0,0.08);
+                    font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;
                 ">
-                    <h2 style="margin-bottom:10px;">👋 Hi ' . esc_html($current_user->display_name) . '</h2>
+                    
+                    <!-- ICON -->
+                    <div style="font-size:40px; margin-bottom:10px;">⚙️</div>
 
-                    <p style="color:#6b7280; margin-bottom:20px;">
-                        You are logged in as admin. Go back to dashboard to manage the system.
+                    <!-- TITLE -->
+                    <h2 style="
+                        margin-bottom:8px;
+                        font-size:22px;
+                        font-weight:600;
+                        color:#111827;
+                    ">
+                        Welcome back, ' . esc_html($current_user->display_name) . ' 👋
+                    </h2>
+
+                    <!-- SUB TEXT (DULL) -->
+                    <p style="
+                        color:#9ca3af;
+                        font-size:14px;
+                        margin-bottom:6px;
+                    ">
+                        You are currently in admin mode
                     </p>
 
+                    <!-- MAIN MESSAGE -->
+                    <p style="
+                        color:#4b5563;
+                        font-size:15px;
+                        margin-bottom:25px;
+                    ">
+                        Manage users, content and system settings from your dashboard.
+                    </p>
+
+                    <!-- BUTTON -->
                     <a href="' . esc_url(admin_url()) . '" 
-                    style="display:inline-block; padding:10px 20px; background:#2563eb; color:#fff; border-radius:8px; text-decoration:none;">
-                    Go to Dashboard
+                    style="
+                        display:inline-block;
+                        padding:12px 24px;
+                        background:linear-gradient(135deg,#2563eb,#4f46e5);
+                        color:#fff;
+                        border-radius:10px;
+                        text-decoration:none;
+                        font-size:14px;
+                        font-weight:500;
+                        box-shadow:0 8px 20px rgba(37,99,235,0.3);
+                        transition:all 0.2s ease;
+                    ">
+                        Go to Dashboard →
                     </a>
+
                 </div>
             ';
         }
